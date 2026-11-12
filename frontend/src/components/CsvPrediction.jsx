@@ -74,11 +74,11 @@ export default function CsvPrediction() {
   return (
     <div className="space-y-8">
       {/* Zone de Téléversement */}
-      <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-6 backdrop-blur shadow-xl">
-        <div className="mb-4">
-          <h2 className="text-lg font-semibold text-white tracking-tight">Import de Fichier CSV</h2>
-          <p className="text-xs text-slate-400">
-            Téléversez des captures de trafic réseau (format CIC-IDS2017) pour une classification de masse.
+      <div className="bg-black/60 border border-zinc-800 rounded-2xl p-6 sm:p-7 backdrop-blur shadow-2xl">
+        <div className="mb-5">
+          <h3 className="text-base font-semibold text-white tracking-tight">Import de Fichier CSV</h3>
+          <p className="text-xs text-zinc-400 mt-1">
+            Téléversez des captures de trafic réseau (format CIC-IDS2017) pour une classification de masse par lot.
           </p>
         </div>
 
@@ -86,7 +86,7 @@ export default function CsvPrediction() {
         <div
           onDragOver={(e) => e.preventDefault()}
           onDrop={handleDrop}
-          className="border-2 border-dashed border-slate-700 hover:border-cyan-500/70 rounded-xl p-8 text-center bg-slate-950/40 transition cursor-pointer"
+          className="border-2 border-dashed border-zinc-800 hover:border-blue-500/80 rounded-2xl p-10 text-center bg-zinc-950/40 transition cursor-pointer"
           onClick={() => document.getElementById('csv-file-input')?.click()}
         >
           <input
@@ -97,28 +97,28 @@ export default function CsvPrediction() {
             className="hidden"
           />
 
-          <UploadCloud className="w-12 h-12 mx-auto text-cyan-400 mb-3" />
-          <p className="text-sm font-medium text-slate-200">
+          <UploadCloud className="w-10 h-10 mx-auto text-blue-500 mb-3" />
+          <p className="text-sm font-medium text-white">
             {file ? file.name : 'Glissez-déposez votre fichier CSV ici, ou cliquez pour parcourir'}
           </p>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-zinc-500 mt-1">
             {file
-              ? `${(file.size / 1024).toFixed(1)} Ko - Prêt pour l'inférence`
+              ? `${(file.size / 1024).toFixed(1)} Ko - Prêt pour l'inférence vectorisée`
               : 'Colonnes attendues : Destination Port, Flow Duration, Total Fwd Packets, etc.'}
           </p>
         </div>
 
         {error && (
-          <div className="mt-4 p-3.5 rounded-lg bg-rose-950/50 border border-rose-800 text-rose-300 text-xs flex items-start space-x-2.5">
+          <div className="mt-4 p-3.5 rounded-xl bg-rose-950/40 border border-rose-800/80 text-rose-300 text-xs flex items-start space-x-2.5">
             <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-rose-400" />
             <span>{error}</span>
           </div>
         )}
 
         {/* Boutons d'action */}
-        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-slate-800">
-          <div className="flex items-center space-x-2 text-xs text-slate-400">
-            <FileText className="w-4 h-4 text-slate-500" />
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 pt-5 border-t border-zinc-800">
+          <div className="flex items-center space-x-2 text-xs text-zinc-400">
+            <FileText className="w-4 h-4 text-zinc-500" />
             <span>{file ? `Sélectionné : ${file.name}` : 'Aucun fichier sélectionné'}</span>
           </div>
 
@@ -128,12 +128,12 @@ export default function CsvPrediction() {
                 type="button"
                 onClick={handleDownload}
                 disabled={downloading}
-                className="px-4 py-2 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center space-x-2"
+                className="px-5 py-2.5 text-xs font-semibold rounded-full bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-800 transition flex items-center space-x-2 active:scale-95"
               >
                 {downloading ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 ) : (
-                  <Download className="w-3.5 h-3.5 text-cyan-400" />
+                  <Download className="w-3.5 h-3.5 text-blue-400" />
                 )}
                 <span>Télécharger le CSV annoté</span>
               </button>
@@ -143,7 +143,7 @@ export default function CsvPrediction() {
               type="button"
               onClick={handleAnalyze}
               disabled={!file || loading}
-              className="px-5 py-2 text-xs font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white shadow-lg shadow-cyan-950 transition flex items-center space-x-2"
+              className="px-6 py-2.5 text-xs font-semibold rounded-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white shadow-xl shadow-blue-600/30 transition flex items-center space-x-2 active:scale-95"
             >
               {loading ? (
                 <>
@@ -172,4 +172,3 @@ export default function CsvPrediction() {
     </div>
   );
 }
-

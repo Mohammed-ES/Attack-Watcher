@@ -16,10 +16,10 @@ const COLORS = ['#10b981', '#f43f5e'];
 const CustomTooltip = ({ active, payload }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-slate-900 border border-slate-700 p-2.5 rounded shadow-xl text-xs">
+      <div className="bg-[#0c0c0e] border border-[#1a1a1e] p-3 rounded-xl shadow-2xl text-xs">
         <p className="font-semibold text-white">{payload[0].name}</p>
-        <p className="text-slate-300 mt-1">
-          Volume : <span className="font-mono font-bold text-cyan-400">{payload[0].value.toLocaleString()}</span>
+        <p className="text-neutral-400 mt-1">
+          Volume : <span className="font-mono font-bold text-[#2563eb]">{payload[0].value.toLocaleString()}</span>
         </p>
       </div>
     );
@@ -30,10 +30,10 @@ const CustomTooltip = ({ active, payload }) => {
 const CustomBarTooltip = ({ active, payload }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-slate-900 border border-slate-700 p-2.5 rounded shadow-xl text-xs">
+      <div className="bg-[#0c0c0e] border border-[#1a1a1e] p-3 rounded-xl shadow-2xl text-xs">
         <p className="font-semibold text-white">{payload[0].payload.tier}</p>
-        <p className="text-slate-300 mt-1">
-          Flux : <span className="font-mono font-bold text-cyan-400">{payload[0].value.toLocaleString()}</span>
+        <p className="text-neutral-400 mt-1">
+          Flux : <span className="font-mono font-bold text-[#2563eb]">{payload[0].value.toLocaleString()}</span>
         </p>
       </div>
     );
@@ -53,7 +53,7 @@ export default function Visualizations({ summary, rows }) {
   // Regroupement par tranches de risque de probabilité
   const riskTiers = [
     { tier: 'Faible (0-20%)', count: 0, fill: '#10b981' },
-    { tier: 'Modéré (20-50%)', count: 0, fill: '#06b6d4' },
+    { tier: 'Modéré (20-50%)', count: 0, fill: '#2563eb' },
     { tier: 'Élevé (50-80%)', count: 0, fill: '#f59e0b' },
     { tier: 'Critique (80-100%)', count: 0, fill: '#f43f5e' },
   ];
@@ -69,9 +69,9 @@ export default function Visualizations({ summary, rows }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
       {/* Répartition Normal vs Attaque */}
-      <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-5 backdrop-blur shadow-xl">
-        <div className="flex items-center space-x-2 pb-3 mb-4 border-b border-slate-800">
-          <PieIcon className="w-4 h-4 text-cyan-400" />
+      <div className="bg-[#0c0c0e] border border-[#1a1a1e] rounded-2xl p-6 shadow-xl">
+        <div className="flex items-center space-x-2 pb-3 mb-4 border-b border-[#1a1a1e]">
+          <PieIcon className="w-4 h-4 text-[#2563eb]" />
           <h3 className="text-sm font-semibold text-white tracking-tight">Répartition Globale du Trafic</h3>
         </div>
 
@@ -96,38 +96,42 @@ export default function Visualizations({ summary, rows }) {
           </ResponsiveContainer>
         </div>
 
-        <div className="flex items-center justify-center space-x-6 text-xs text-slate-300 pt-2 border-t border-slate-800/60">
+        <div className="flex items-center justify-center space-x-6 text-xs text-neutral-400 pt-2 border-t border-[#1a1a1e]">
           <div className="flex items-center space-x-2">
-            <span className="w-3 h-3 rounded-full bg-emerald-500"></span>
-            <span>Trafic Normal ({summary.total_normal})</span>
+            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+            <span>Normal ({summary.total_normal.toLocaleString()})</span>
           </div>
           <div className="flex items-center space-x-2">
-            <span className="w-3 h-3 rounded-full bg-rose-500"></span>
-            <span>Attaques DDoS ({summary.total_attacks})</span>
+            <div className="w-2.5 h-2.5 rounded-full bg-rose-500" />
+            <span>DDoS ({summary.total_attacks.toLocaleString()})</span>
           </div>
         </div>
       </div>
 
-      {/* Distribution par niveau de risque */}
-      <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-5 backdrop-blur shadow-xl">
-        <div className="flex items-center space-x-2 pb-3 mb-4 border-b border-slate-800">
-          <BarChart3 className="w-4 h-4 text-cyan-400" />
-          <h3 className="text-sm font-semibold text-white tracking-tight">Distribution par Niveau de Probabilité</h3>
+      {/* Distribution par Niveau de Risque */}
+      <div className="bg-[#0c0c0e] border border-[#1a1a1e] rounded-2xl p-6 shadow-xl">
+        <div className="flex items-center space-x-2 pb-3 mb-4 border-b border-[#1a1a1e]">
+          <BarChart3 className="w-4 h-4 text-[#2563eb]" />
+          <h3 className="text-sm font-semibold text-white tracking-tight">Niveaux de Risque (Confiance Modèle)</h3>
         </div>
 
         <div className="h-64 w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={riskTiers} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
-              <XAxis dataKey="tier" stroke="#64748b" fontSize={11} interval={0} angle={-15} textAnchor="end" />
-              <YAxis stroke="#64748b" fontSize={11} />
+            <BarChart data={riskTiers} margin={{ top: 20, right: 10, left: -20, bottom: 5 }}>
+              <XAxis dataKey="tier" tick={{ fill: '#737373', fontSize: 10 }} />
+              <YAxis tick={{ fill: '#737373', fontSize: 10 }} />
               <Tooltip content={<CustomBarTooltip />} />
-              <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+              <Bar dataKey="count" radius={[6, 6, 0, 0]}>
                 {riskTiers.map((entry, index) => (
-                  <Cell key={`bar-${index}`} fill={entry.fill} />
+                  <Cell key={`cell-bar-${index}`} fill={entry.fill} />
                 ))}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
+        </div>
+
+        <div className="text-center text-xs text-neutral-500 pt-2 border-t border-[#1a1a1e]">
+          Distribution probabiliste de l'ensemble des flux classifiés
         </div>
       </div>
     </div>

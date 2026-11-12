@@ -11,9 +11,8 @@ export default function MetricsOverview({ summary }) {
       value: total_analysed.toLocaleString(),
       subtitle: 'Lignes réseau traitées',
       icon: FileSpreadsheet,
-      iconColor: 'text-cyan-400',
-      bgColor: 'bg-cyan-950/40',
-      borderColor: 'border-cyan-800/60',
+      iconColor: 'text-[#2563eb]',
+      borderColor: 'border-[#1a1a1e] hover:border-[#2563eb]/40',
     },
     {
       title: 'Trafic Normal',
@@ -21,8 +20,7 @@ export default function MetricsOverview({ summary }) {
       subtitle: `${((total_normal / (total_analysed || 1)) * 100).toFixed(1)}% du total`,
       icon: CheckCircle2,
       iconColor: 'text-emerald-400',
-      bgColor: 'bg-emerald-950/40',
-      borderColor: 'border-emerald-800/60',
+      borderColor: 'border-[#1a1a1e] hover:border-emerald-500/40',
     },
     {
       title: 'Attaques Détectées',
@@ -30,8 +28,7 @@ export default function MetricsOverview({ summary }) {
       subtitle: 'Flux malveillants identifiés',
       icon: AlertTriangle,
       iconColor: 'text-rose-400',
-      bgColor: 'bg-rose-950/40',
-      borderColor: 'border-rose-800/60',
+      borderColor: 'border-[#1a1a1e] hover:border-rose-500/40',
     },
     {
       title: "Taux d'Attaque",
@@ -39,8 +36,7 @@ export default function MetricsOverview({ summary }) {
       subtitle: 'Gravité du flux global',
       icon: Activity,
       iconColor: attack_percentage > 20 ? 'text-rose-400' : 'text-amber-400',
-      bgColor: 'bg-slate-900/60',
-      borderColor: 'border-slate-800',
+      borderColor: 'border-[#1a1a1e] hover:border-[#2563eb]/40',
     },
   ];
 
@@ -51,17 +47,17 @@ export default function MetricsOverview({ summary }) {
         return (
           <div
             key={i}
-            className={`p-5 rounded-xl border ${c.borderColor} ${c.bgColor} backdrop-blur shadow-lg transition hover:border-slate-700`}
+            className={`p-5 rounded-2xl border ${c.borderColor} bg-[#0c0c0e] shadow-lg transition-all duration-300`}
           >
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">{c.title}</span>
-              <div className={`p-2 rounded-lg bg-slate-950/60 border border-slate-800 ${c.iconColor}`}>
+              <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider">{c.title}</span>
+              <div className={`p-2 rounded-xl bg-black border border-[#1a1a1e] ${c.iconColor}`}>
                 <Icon className="w-4 h-4" />
               </div>
             </div>
             <div className="mt-3">
               <div className="text-2xl font-bold text-white tracking-tight">{c.value}</div>
-              <div className="text-xs text-slate-400 mt-1">{c.subtitle}</div>
+              <div className="text-xs text-neutral-500 mt-1">{c.subtitle}</div>
             </div>
           </div>
         );
@@ -69,4 +65,3 @@ export default function MetricsOverview({ summary }) {
     </div>
   );
 }
-

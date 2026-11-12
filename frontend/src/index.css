@@ -5,49 +5,50 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    background-color: #000000;
   }
   body {
-    background-color: #070913;
-    color: #f1f5f9;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
+    background-color: #000000;
+    color: #f4f4f5;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     overflow-x: hidden;
   }
 }
 
-/* Grille de fond cybernétique */
-.cyber-grid {
-  background-size: 40px 40px;
-  background-image: 
-    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+/* Rayons de lumière verticaux signature d'Aura */
+.aura-beam-container {
+  background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(37, 99, 235, 0.35), transparent 70%);
 }
 
-.isometric-plane {
-  transform: perspective(1000px) rotateX(24deg) rotateY(-8deg) rotateZ(3deg);
-  transform-style: preserve-3d;
+.aura-light-lines {
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 18px,
+    rgba(59, 130, 246, 0.08) 19px,
+    transparent 20px
+  );
+  mask-image: radial-gradient(ellipse 90% 70% at 50% 100%, black 30%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 100%, black 30%, transparent 80%);
 }
 
-/* Lueur d'accentuation */
-.glow-blur-purple {
-  background: radial-gradient(circle at 50% 50%, rgba(124, 58, 237, 0.18), transparent 70%);
+/* Lueur radiale douce */
+.blue-glow {
+  background: radial-gradient(circle at 50% 50%, rgba(37, 99, 235, 0.25), transparent 70%);
 }
 
-.glow-blur-cyan {
-  background: radial-gradient(circle at 50% 50%, rgba(6, 182, 212, 0.15), transparent 70%);
-}
-
-/* Barre de défilement moderne et discrète */
+/* Barre de défilement discrète */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: #070913;
+  background: #000000;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
-  border-radius: 3px;
+  background: #27272a;
+  border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: #3f3f46;
 }

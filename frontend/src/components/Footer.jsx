@@ -1,4 +1,4 @@
-import { ShieldCheck, GitBranch, ExternalLink } from 'lucide-react';
+import { ShieldCheck, ArrowUpRight } from 'lucide-react';
 
 export default function Footer() {
   const scrollTo = (id) => {
@@ -7,72 +7,69 @@ export default function Footer() {
   };
 
   return (
-    <footer className="border-t border-slate-800/80 bg-obsidian-950 py-12 text-slate-400 text-xs">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-10">
-          {/* Logo & description */}
-          <div className="md:col-span-2 space-y-3">
-            <div className="flex items-center space-x-2">
-              <span className="font-mono text-cyan-400 font-bold text-base">&gt;_</span>
-              <span className="font-bold text-white text-base tracking-tight font-mono">attack_watcher</span>
+    <footer className="bg-black border-t border-zinc-900 py-16 text-zinc-400 text-xs">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-10 mb-14">
+          {/* Logo & Description */}
+          <div className="md:col-span-2 space-y-4">
+            <div className="flex items-center space-x-2 text-white">
+              <div className="w-6 h-6 rounded-full bg-blue-600/30 border border-blue-500/40 flex items-center justify-center text-blue-400">
+                <ShieldCheck className="w-3.5 h-3.5" />
+              </div>
+              <span className="font-semibold text-sm tracking-tight">Attack Watcher</span>
             </div>
-            <p className="text-slate-400 text-xs font-light max-w-sm leading-relaxed">
-              Plateforme de sécurité réseau et d'ingénierie Machine Learning dédiée à l'identification
-              et à la neutralisation des attaques par déni de service distribué (DDoS) en temps réel.
+
+            <p className="text-zinc-500 text-xs font-light max-w-sm leading-relaxed">
+              Architecture d'apprentissage automatique supervisé pour l'inspection et la classification
+              des flux réseau à haut débit. Modèles RandomForest & XGBoost entraînés sur CIC-IDS2017.
             </p>
-            <div className="pt-2 flex items-center space-x-3 text-slate-400">
-              <span className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded bg-obsidian-900 border border-slate-800 text-[11px]">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Modèle Actif : RandomForest (Champion)</span>
-              </span>
+
+            <div className="pt-1 flex items-center space-x-2 text-[11px] text-zinc-500 font-mono">
+              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+              <span>Système Opérationnel | API FastAPI v1.0.0</span>
             </div>
           </div>
 
-          {/* Navigation */}
-          <div className="space-y-2">
-            <h5 className="font-mono text-white uppercase tracking-wider text-xs font-semibold">Navigation</h5>
-            <ul className="space-y-1.5">
+          {/* Colonne Plateforme */}
+          <div className="space-y-3">
+            <h5 className="font-medium text-white text-xs">Plateforme</h5>
+            <ul className="space-y-2 text-zinc-400">
               <li>
-                <button onClick={() => scrollTo('hero')} className="hover:text-cyan-400 transition">
-                  Présentation
+                <button onClick={() => scrollTo('how-it-works')} className="hover:text-white transition">
+                  Fonctionnement
                 </button>
               </li>
               <li>
-                <button onClick={() => scrollTo('features')} className="hover:text-cyan-400 transition">
-                  Fonctionnalités
+                <button onClick={() => scrollTo('capabilities')} className="hover:text-white transition">
+                  Capacités
                 </button>
               </li>
               <li>
-                <button onClick={() => scrollTo('console')} className="hover:text-cyan-400 transition">
-                  Console Active
+                <button onClick={() => scrollTo('console')} className="hover:text-white transition">
+                  Console Live
                 </button>
               </li>
               <li>
-                <button onClick={() => scrollTo('benchmark')} className="hover:text-cyan-400 transition">
-                  Benchmark ML
-                </button>
-              </li>
-              <li>
-                <button onClick={() => scrollTo('architecture')} className="hover:text-cyan-400 transition">
-                  Architecture
+                <button onClick={() => scrollTo('metrics')} className="hover:text-white transition">
+                  Métriques & Stats
                 </button>
               </li>
             </ul>
           </div>
 
-          {/* Références & Liens */}
-          <div className="space-y-2">
-            <h5 className="font-mono text-white uppercase tracking-wider text-xs font-semibold">Références & Sources</h5>
-            <ul className="space-y-1.5">
+          {/* Colonne Ressources */}
+          <div className="space-y-3">
+            <h5 className="font-medium text-white text-xs">Ressources</h5>
+            <ul className="space-y-2 text-zinc-400">
               <li>
                 <a
                   href="https://www.unb.ca/cic/datasets/ids-2017.html"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-cyan-400 transition flex items-center space-x-1"
+                  className="hover:text-white transition flex items-center space-x-1"
                 >
-                  <span>CIC-IDS2017 Dataset</span>
-                  <ExternalLink className="w-3 h-3" />
+                  <span>CIC-IDS2017</span>
+                  <ArrowUpRight className="w-3 h-3 text-zinc-600" />
                 </a>
               </li>
               <li>
@@ -80,30 +77,50 @@ export default function Footer() {
                   href="https://github.com/Mohammed-ES/Attack-Watcher"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-cyan-400 transition flex items-center space-x-1"
+                  className="hover:text-white transition flex items-center space-x-1"
                 >
-                  <GitBranch className="w-3 h-3 text-cyan-400" />
                   <span>Dépôt GitHub</span>
+                  <ArrowUpRight className="w-3 h-3 text-zinc-600" />
                 </a>
               </li>
+              <li>
+                <a
+                  href="https://github.com/Mohammed-ES/Attack-Watcher/blob/main/ARCHITECTURE.md"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white transition"
+                >
+                  Architecture ML
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          {/* Colonne Légal */}
+          <div className="space-y-3">
+            <h5 className="font-medium text-white text-xs">Légal</h5>
+            <ul className="space-y-2 text-zinc-400">
               <li>
                 <a
                   href="https://github.com/Mohammed-ES/Attack-Watcher/blob/main/LICENSE"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-cyan-400 transition"
+                  className="hover:text-white transition"
                 >
                   Licence MIT
                 </a>
+              </li>
+              <li className="text-zinc-600">
+                Mohammed-ES &copy; 2026
               </li>
             </ul>
           </div>
         </div>
 
-        {/* Ligne inférieure de copyright */}
-        <div className="pt-8 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-slate-400">
-          <span>Copyright (c) 2026 Mohammed-ES. Tous droits réservés.</span>
-          <span>Développé pour la détection DDoS en production sur standard CIC-IDS2017.</span>
+        {/* Ligne inférieure copyright */}
+        <div className="pt-8 border-t border-zinc-900 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-zinc-600 font-mono">
+          <span>&copy; 2026 Attack Watcher. Tous droits réservés.</span>
+          <span>Développé pour la détection DDoS en production.</span>
         </div>
       </div>
     </footer>
