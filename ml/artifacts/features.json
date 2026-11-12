@@ -1,0 +1,58 @@
+{
+  "features": [
+    "Destination Port",
+    "Flow Duration",
+    "Total Fwd Packets",
+    "Total Backward Packets",
+    "Total Length of Fwd Packets",
+    "Total Length of Bwd Packets",
+    "Bwd Packet Length Std",
+    "Flow Packets/s",
+    "Flow IAT Mean",
+    "ACK Flag Count"
+  ],
+  "feature_descriptions": {
+    "Destination Port": "Port de destination du flux réseau (ex: 80, 443)",
+    "Flow Duration": "Durée totale du flux réseau (en microsecondes)",
+    "Total Fwd Packets": "Nombre total de paquets émis dans le sens aller",
+    "Total Backward Packets": "Nombre total de paquets reçus en retour",
+    "Total Length of Fwd Packets": "Taille totale cumulée des paquets émis (octets)",
+    "Total Length of Bwd Packets": "Taille totale cumulée des paquets reçus (octets)",
+    "Bwd Packet Length Std": "Écart-type de la longueur des paquets reçus",
+    "Flow Packets/s": "Débit moyen du flux en paquets par seconde",
+    "Flow IAT Mean": "Temps moyen d'intervalle d'arrivée des paquets (Flow Inter-Arrival Time)",
+    "ACK Flag Count": "Nombre de paquets avec le drapeau TCP ACK activé"
+  },
+  "target": "Label",
+  "label_mapping": {
+    "0": "Normal",
+    "1": "Attaque DDoS"
+  },
+  "champion_model": "RandomForest",
+  "benchmark": {
+    "RandomForest": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "roc_auc": 1.0,
+      "confusion_matrix": {
+        "tn": 1650,
+        "fp": 0,
+        "fn": 0,
+        "tp": 1350
+      }
+    },
+    "XGBoost": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "roc_auc": 1.0,
+      "confusion_matrix": {
+        "tn": 1650,
+        "fp": 0,
+        "fn": 0,
+        "tp": 1350
+      }
+    }
+  }
+}
