@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ShieldCheck, Filter, Cpu, Zap, Check } from 'lucide-react';
+import { ScrollReveal } from '../animations';
 
 export default function HowItWorksSection() {
   const [activeStep, setActiveStep] = useState(0);
@@ -53,26 +54,29 @@ export default function HowItWorksSection() {
   ];
 
   return (
-    <section id="how-it-works" className="py-24 sm:py-32 bg-black border-t border-zinc-900 relative">
+    <section id="how-it-works" className="py-24 sm:py-32 bg-black border-t border-[#1a1a1e] relative">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         {/* En-tête centré épuré */}
-        <div className="text-center max-w-2xl mx-auto mb-16 space-y-3">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white">
-            How it works
-          </h2>
-          <p className="text-zinc-400 text-sm sm:text-base font-normal">
-            Precision telemetry, automated sanitization, and supervised machine learning inference
-            across every layer of your network.
-          </p>
-          <div className="pt-2">
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-zinc-900 text-zinc-300 border border-zinc-800">
-              Architecture
-            </span>
+        <ScrollReveal direction="up">
+          <div className="text-center max-w-2xl mx-auto mb-16 space-y-3">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white">
+              How it works
+            </h2>
+            <p className="text-neutral-400 text-sm sm:text-base font-normal">
+              Precision telemetry, automated sanitization, and supervised machine learning inference
+              across every layer of your network.
+            </p>
+            <div className="pt-2">
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#0c0c0e] text-neutral-300 border border-[#222228]">
+                Architecture
+              </span>
+            </div>
           </div>
-        </div>
+        </ScrollReveal>
 
         {/* Le bloc interactif 4 colonnes + Panneau latéral (Exactement le layout du screenshot) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+        <ScrollReveal direction="up" delay={0.15}>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
           {/* Colonnes interactives 01, 02, 03, 04 */}
           <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-4 gap-3 min-h-[460px]">
             {steps.map((step, idx) => {
@@ -233,6 +237,7 @@ export default function HowItWorksSection() {
             </div>
           </div>
         </div>
+        </ScrollReveal>
       </div>
     </section>
   );

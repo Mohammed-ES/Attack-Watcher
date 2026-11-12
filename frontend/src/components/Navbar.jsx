@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ShieldCheck, Menu, X, ArrowUpRight } from 'lucide-react';
+import { Menu, X, ArrowUpRight } from 'lucide-react';
 
 export default function Navbar({ onNavigateToConsole }) {
   const [scrolled, setScrolled] = useState(false);
@@ -24,29 +24,33 @@ export default function Navbar({ onNavigateToConsole }) {
       <div
         className={`w-full max-w-6xl rounded-full px-5 py-3 flex items-center justify-between transition-all duration-300 ${
           scrolled
-            ? 'bg-black/80 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/80'
+            ? 'bg-black/85 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/90'
             : 'bg-black/40 backdrop-blur-md border border-white/5'
         }`}
       >
-        {/* Logo minimaliste */}
+        {/* Logo officiel Attack Watcher */}
         <a
           href="#hero"
           onClick={(e) => {
             e.preventDefault();
             scrollTo('hero');
           }}
-          className="flex items-center space-x-2.5 text-white group"
+          className="flex items-center space-x-3 text-white group"
         >
-          <div className="w-8 h-8 rounded-full bg-blue-600/20 border border-blue-500/40 flex items-center justify-center text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition duration-300">
-            <ShieldCheck className="w-4 h-4" />
+          <div className="w-8 h-8 rounded-lg bg-white p-1 flex items-center justify-center shadow-md transition-transform duration-300 group-hover:scale-105">
+            <img
+              src="/color-icon.webp"
+              alt="Attack Watcher Icon"
+              className="w-full h-full object-contain"
+            />
           </div>
-          <span className="font-semibold text-sm tracking-tight text-white">
-            Attack Watcher
+          <span className="font-semibold text-sm tracking-tight text-white flex items-center space-x-1.5">
+            <span>Attack Watcher</span>
           </span>
         </a>
 
         {/* Liens centraux desktop */}
-        <nav className="hidden md:flex items-center space-x-7 text-xs font-medium text-zinc-400">
+        <nav className="hidden md:flex items-center space-x-7 text-xs font-medium text-neutral-400">
           <button
             onClick={() => scrollTo('how-it-works')}
             className="hover:text-white transition"
@@ -57,7 +61,7 @@ export default function Navbar({ onNavigateToConsole }) {
             onClick={() => scrollTo('capabilities')}
             className="hover:text-white transition"
           >
-            Capacités
+            Pipeline & Modèles
           </button>
           <button
             onClick={() => scrollTo('console')}
@@ -65,18 +69,6 @@ export default function Navbar({ onNavigateToConsole }) {
           >
             <span>Console Live</span>
             <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
-          </button>
-          <button
-            onClick={() => scrollTo('metrics')}
-            className="hover:text-white transition"
-          >
-            Métriques
-          </button>
-          <button
-            onClick={() => scrollTo('integration')}
-            className="hover:text-white transition"
-          >
-            Intégration
           </button>
         </nav>
 
@@ -86,9 +78,9 @@ export default function Navbar({ onNavigateToConsole }) {
             href="https://github.com/Mohammed-ES/Attack-Watcher"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-xs font-medium text-zinc-400 hover:text-white transition flex items-center space-x-1"
+            className="text-xs font-medium text-neutral-400 hover:text-white transition flex items-center space-x-1"
           >
-            <span>Code Source</span>
+            <span>GitHub</span>
             <ArrowUpRight className="w-3.5 h-3.5" />
           </a>
 
@@ -97,7 +89,7 @@ export default function Navbar({ onNavigateToConsole }) {
               if (onNavigateToConsole) onNavigateToConsole();
               scrollTo('console');
             }}
-            className="px-4 py-2 rounded-full bg-white hover:bg-zinc-200 text-black text-xs font-semibold tracking-tight transition shadow-lg shadow-white/10 active:scale-95"
+            className="px-4 py-2 rounded-full bg-white hover:bg-neutral-200 text-black text-xs font-semibold tracking-tight transition shadow-lg shadow-white/10 active:scale-95"
           >
             Lancer l'Analyse
           </button>
@@ -106,7 +98,8 @@ export default function Navbar({ onNavigateToConsole }) {
         {/* Bouton mobile */}
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="md:hidden p-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-300"
+          className="md:hidden p-1.5 rounded-full bg-neutral-900 border border-neutral-800 text-neutral-300"
+          aria-label="Menu"
         >
           {mobileOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
         </button>
@@ -114,18 +107,18 @@ export default function Navbar({ onNavigateToConsole }) {
 
       {/* Menu mobile déroulant */}
       {mobileOpen && (
-        <div className="absolute top-18 inset-x-4 max-w-6xl mx-auto bg-zinc-950/95 border border-zinc-800/80 backdrop-blur-2xl rounded-2xl p-6 shadow-2xl flex flex-col space-y-4 md:hidden">
+        <div className="absolute top-18 inset-x-4 max-w-6xl mx-auto bg-neutral-950/95 border border-neutral-800 backdrop-blur-2xl rounded-2xl p-6 shadow-2xl flex flex-col space-y-4 md:hidden">
           <button
             onClick={() => scrollTo('how-it-works')}
-            className="text-left text-sm text-zinc-300 hover:text-white"
+            className="text-left text-sm text-neutral-300 hover:text-white"
           >
             Fonctionnement
           </button>
           <button
             onClick={() => scrollTo('capabilities')}
-            className="text-left text-sm text-zinc-300 hover:text-white"
+            className="text-left text-sm text-neutral-300 hover:text-white"
           >
-            Capacités
+            Pipeline & Modèles
           </button>
           <button
             onClick={() => scrollTo('console')}
@@ -133,19 +126,16 @@ export default function Navbar({ onNavigateToConsole }) {
           >
             Console Live (Inférence Directe)
           </button>
-          <button
-            onClick={() => scrollTo('metrics')}
-            className="text-left text-sm text-zinc-300 hover:text-white"
-          >
-            Métriques & Benchmark
-          </button>
-          <button
-            onClick={() => scrollTo('integration')}
-            className="text-left text-sm text-zinc-300 hover:text-white"
-          >
-            Intégration
-          </button>
-          <div className="pt-2 border-t border-zinc-800 flex justify-between items-center">
+          <div className="pt-2 border-t border-neutral-800 flex flex-col space-y-3">
+            <a
+              href="https://github.com/Mohammed-ES/Attack-Watcher"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-neutral-400 hover:text-white flex items-center space-x-1"
+            >
+              <span>Dépôt GitHub</span>
+              <ArrowUpRight className="w-3.5 h-3.5" />
+            </a>
             <button
               onClick={() => {
                 if (onNavigateToConsole) onNavigateToConsole();
