@@ -13,6 +13,34 @@ import { BarChart3, PieChart as PieIcon } from 'lucide-react';
 
 const COLORS = ['#10b981', '#f43f5e'];
 
+const CustomTooltip = ({ active, payload }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-slate-900 border border-slate-700 p-2.5 rounded shadow-xl text-xs">
+        <p className="font-semibold text-white">{payload[0].name}</p>
+        <p className="text-slate-300 mt-1">
+          Volume : <span className="font-mono font-bold text-cyan-400">{payload[0].value.toLocaleString()}</span>
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
+
+const CustomBarTooltip = ({ active, payload }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-slate-900 border border-slate-700 p-2.5 rounded shadow-xl text-xs">
+        <p className="font-semibold text-white">{payload[0].payload.tier}</p>
+        <p className="text-slate-300 mt-1">
+          Flux : <span className="font-mono font-bold text-cyan-400">{payload[0].value.toLocaleString()}</span>
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
+
 export default function Visualizations({ summary, rows }) {
   if (!summary || !rows || rows.length === 0) return null;
 
@@ -37,20 +65,6 @@ export default function Visualizations({ summary, rows }) {
     else if (p < 0.8) riskTiers[2].count++;
     else riskTiers[3].count++;
   });
-
-  const CustomTooltip = ({ active, payload }) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-slate-900 border border-slate-700 p-2.5 rounded shadow-xl text-xs">
-          <p className="font-semibold text-white">{payload[0].name}</p>
-          <p className="text-slate-300 mt-1">
-            Volume : <span className="font-mono font-bold text-cyan-400">{payload[0].value.toLocaleString()}</span>
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
@@ -106,21 +120,7 @@ export default function Visualizations({ summary, rows }) {
             <BarChart data={riskTiers} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
               <XAxis dataKey="tier" stroke="#64748b" fontSize={11} interval={0} angle={-15} textAnchor="end" />
               <YAxis stroke="#64748b" fontSize={11} />
-              <Tooltip
-                content={({ active, payload }) => {
-                  if (active && payload && payload.length) {
-                    return (
-                      <div className="bg-slate-900 border border-slate-700 p-2.5 rounded shadow-xl text-xs">
-                        <p className="font-semibold text-white">{payload[0].payload.tier}</p>
-                        <p className="text-slate-300 mt-1">
-                          Flux : <span className="font-mono font-bold text-cyan-400">{payload[0].value.toLocaleString()}</span>
-                        </p>
-                      </div>
-                    );
-                  }
-                  return null;
-                }}
-              />
+              <Tooltip content={<CustomBarTooltip />} />
               <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                 {riskTiers.map((entry, index) => (
                   <Cell key={`bar-${index}`} fill={entry.fill} />
@@ -133,4 +133,3 @@ export default function Visualizations({ summary, rows }) {
     </div>
   );
 }
-
