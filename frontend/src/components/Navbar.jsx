@@ -2,14 +2,27 @@ import { useState, useEffect } from 'react';
 import { Menu, X, ArrowUpRight } from 'lucide-react';
 
 export default function Navbar({ onNavigateToConsole }) {
+  const [visible, setVisible] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
+      const heroEl = document.getElementById('hero');
+      if (heroEl) {
+        const rect = heroEl.getBoundingClientRect();
+        // Apparaît dès que le Hero section entre dans le viewport
+        const inHeroOrBelow = rect.top <= window.innerHeight * 0.75;
+        setVisible(inHeroOrBelow);
+        setScrolled(rect.top <= 80);
+      } else {
+        setVisible(window.scrollY > 200);
+        setScrolled(window.scrollY > 250);
+      }
     };
-    window.addEventListener('scroll', handleScroll);
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -20,12 +33,16 @@ export default function Navbar({ onNavigateToConsole }) {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 flex justify-center px-4 pt-4 transition-all">
+    <header
+      className={`fixed top-0 left-0 right-0 z-50 flex justify-center px-4 pt-4 transition-all duration-500 ease-out ${
+        visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-12 pointer-events-none'
+      }`}
+    >
       <div
         className={`w-full max-w-6xl rounded-full px-5 py-3 flex items-center justify-between transition-all duration-300 ${
           scrolled
             ? 'bg-black/85 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/90'
-            : 'bg-black/40 backdrop-blur-md border border-white/5'
+            : 'bg-black/50 backdrop-blur-md border border-white/5'
         }`}
       >
         {/* Logo officiel Attack Watcher */}
