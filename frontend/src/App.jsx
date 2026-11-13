@@ -49,7 +49,7 @@ export default function App() {
       {/* 1. HELLO SECTION : Présente d'abord le logo .GIF officiel avec invitation au scroll */}
       <HelloSection onExplore={scrollToHero} />
 
-      {/* 2. HERO SECTION : Style cinématique Morve / Aura avec boutons sci-fi et typographie en 3 lignes */}
+      {/* 2. HERO SECTION : Style Aura.build épuré "Detection That Scales." avec HeroBeam */}
       <HeroSection onLaunchConsole={scrollToConsole} />
 
       {/* 3. Section "How it works" avec l'accordéon interactif 01, 02, 03, 04 */}
