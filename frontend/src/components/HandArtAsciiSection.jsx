@@ -1,155 +1,57 @@
-import { useEffect, useRef, useState } from 'react';
-import { Terminal, Sliders, RefreshCw, Zap } from 'lucide-react';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { Terminal, Crosshair, Grid, Sparkles } from 'lucide-react';
 import { ScrollReveal } from '../animations';
 
 /**
- * HandArtAsciiSection : Implémentation complète du pipeline "HandArt" ASCII de 21st.dev (Canvas2D).
- * Rendu matriciel haute fidélité avec échantillonnage par cellule, ajustements colorimétriques,
- * teinte (#00ff66), post-effets (scanlines, vignette, bloom, aberration chromatique, glitch, grain)
- * et animation flicker en temps réel.
+ * HandArtAsciiSection : Reconstitution fidèle du chef-d'œuvre "HandArt" de 21st.dev.
+ * Reproduction de l'effet raster Canvas2D sur "The Creation of Adam" :
+ * - Mode Classique : Rendu mosaïque raster avec micro-lignes horizontales gravées et grille (exactement comme le visuel 21st.dev).
+ * - Mode Scanner Tactique : Lentille holographique interactive révélant le code binaire/hexadécimal (#00ff66) au survol de la souris.
+ * - Mode Cyber Hexdump : Matrice intégrale de glyphes hexadécimaux avec scintillement CRT, scanlines, bloom et aberration chromatique.
  */
 export default function HandArtAsciiSection() {
   const canvasRef = useRef(null);
-  const sourceCanvasRef = useRef(null);
+  const containerRef = useRef(null);
+  const imageRef = useRef(null);
+  const mouseRef = useRef({ x: -1000, y: -1000, active: false });
 
-  // Paramètres par défaut issus de la recette JSON 21st.dev
-  const [params, setParams] = useState({
-    renderMode: 'hexdump', // hexdump, matrix, braille, dots, characters, dither
-    cellSize: 12,
-    coverage: 93,
-    contrast: 115,
-    edgeEmphasis: 40,
-    tint: '#00ff66',
-    tintOpacity: 45,
-    scanLines: 28,
-    vignette: 38,
-    chromatic: 40,
-    bloom: 60,
-    filmGrain: 40,
-    glitch: 20,
-    animStyle: 'flicker',
-    animated: true,
-  });
+  // Modes : 'classic' (visuel 21st.dev HandArt exact), 'scanner' (lentille interactive), 'hexdump' (recette cyber verte)
+  const [mode, setMode] = useState('classic');
+  const [cellSize, setCellSize] = useState(10); // 8, 10, 12, 14
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
-  const [activeSubject, setActiveSubject] = useState('sentinel'); // 'sentinel' (cyber security shield/human) ou 'matrix-core'
-
-  // Générateur procédural du sujet source (haute définition, fort contraste, zéro dépendance réseau)
+  // Chargement de l'image source "The Creation of Adam" (HandArt)
   useEffect(() => {
-    const sc = document.createElement('canvas');
-    sc.width = 680;
-    sc.height = 420;
-    const sctx = sc.getContext('2d');
-    if (!sctx) return;
+    const img = new Image();
+    img.src = '/handart-source.jpg';
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      imageRef.current = img;
+      setIsLoaded(true);
+    };
+    img.onerror = () => {
+      console.warn('Impossible de charger /handart-source.jpg, utilisation du fallback.');
+      setIsLoaded(true);
+    };
+  }, []);
 
-    const w = sc.width;
-    const h = sc.height;
+  // Gestion des mouvements de souris pour la lentille scanner
+  const handleMouseMove = useCallback((e) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    mouseRef.current = { x, y, active: true };
+    setMousePos({ x: Math.round(x), y: Math.round(y) });
+  }, []);
 
-    // Fond sombre texturé
-    sctx.fillStyle = '#05070f';
-    sctx.fillRect(0, 0, w, h);
+  const handleMouseLeave = useCallback(() => {
+    mouseRef.current = { x: -1000, y: -1000, active: false };
+  }, []);
 
-    if (activeSubject === 'sentinel') {
-      // Sujet Cyber Sentinel : Silhouette cybernétique avec bouclier réseau et lueurs
-      const grad = sctx.createRadialGradient(w / 2, h / 2 - 20, 20, w / 2, h / 2, 280);
-      grad.addColorStop(0, '#1e3a8a');
-      grad.addColorStop(0.4, '#0f172a');
-      grad.addColorStop(1, '#020617');
-      sctx.fillStyle = grad;
-      sctx.fillRect(0, 0, w, h);
-
-      // Bouclier géométrique central haute définition
-      sctx.save();
-      sctx.translate(w / 2, h / 2 - 10);
-
-      // Halo externe du bouclier
-      sctx.beginPath();
-      sctx.moveTo(0, -110);
-      sctx.lineTo(85, -55);
-      sctx.lineTo(85, 45);
-      sctx.lineTo(0, 115);
-      sctx.lineTo(-85, 45);
-      sctx.lineTo(-85, -55);
-      sctx.closePath();
-      sctx.fillStyle = '#1d4ed8';
-      sctx.fill();
-
-      // Coeur du bouclier (fort contraste blanc / cyan)
-      sctx.beginPath();
-      sctx.moveTo(0, -90);
-      sctx.lineTo(68, -45);
-      sctx.lineTo(68, 35);
-      sctx.lineTo(0, 95);
-      sctx.lineTo(-68, 35);
-      sctx.lineTo(-68, -45);
-      sctx.closePath();
-      sctx.fillStyle = '#ffffff';
-      sctx.fill();
-
-      // Symbole d'attaque interceptée au centre
-      sctx.beginPath();
-      sctx.arc(0, 0, 38, 0, Math.PI * 2);
-      sctx.fillStyle = '#0a0f1d';
-      sctx.fill();
-
-      // Croix de mire tactique
-      sctx.strokeStyle = '#38bdf8';
-      sctx.lineWidth = 5;
-      sctx.beginPath();
-      sctx.moveTo(-25, 0);
-      sctx.lineTo(25, 0);
-      sctx.moveTo(0, -25);
-      sctx.lineTo(0, 25);
-      sctx.stroke();
-
-      sctx.restore();
-
-      // Topologie de réseau (noeuds et connexions autour)
-      sctx.strokeStyle = '#60a5fa';
-      sctx.lineWidth = 2;
-      const nodes = [
-        [w * 0.18, h * 0.25],
-        [w * 0.28, h * 0.75],
-        [w * 0.82, h * 0.25],
-        [w * 0.72, h * 0.75],
-        [w * 0.15, h * 0.55],
-        [w * 0.85, h * 0.55],
-      ];
-      nodes.forEach(([nx, ny]) => {
-        sctx.beginPath();
-        sctx.arc(nx, ny, 12, 0, Math.PI * 2);
-        sctx.fillStyle = '#38bdf8';
-        sctx.fill();
-        sctx.stroke();
-
-        sctx.beginPath();
-        sctx.moveTo(nx, ny);
-        sctx.lineTo(w / 2, h / 2);
-        sctx.stroke();
-      });
-    } else {
-      // Sujet Matrix Core : Flux binaire et processeur central
-      const grad = sctx.createLinearGradient(0, 0, w, h);
-      grad.addColorStop(0, '#022c22');
-      grad.addColorStop(0.5, '#064e3b');
-      grad.addColorStop(1, '#020617');
-      sctx.fillStyle = grad;
-      sctx.fillRect(0, 0, w, h);
-
-      sctx.fillStyle = '#ffffff';
-      sctx.font = 'bold 120px monospace';
-      sctx.textAlign = 'center';
-      sctx.textBaseline = 'middle';
-      sctx.fillText('CIC-2017', w / 2, h / 2 - 20);
-
-      sctx.fillStyle = '#34d399';
-      sctx.font = '24px monospace';
-      sctx.fillText('01010011 01000101 01000011', w / 2, h / 2 + 65);
-    }
-
-    sourceCanvasRef.current = sc;
-  }, [activeSubject]);
-
-  // Boucle de rendu Canvas2D conforme à la recette 21st.dev
+  // Boucle de rendu Canvas2D
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -159,48 +61,61 @@ export default function HandArtAsciiSection() {
     let animId;
     let frame = 0;
 
-    // Palette hex / binary pour hexdump
     const HEX_GLYPHS = ['0', '1', 'A', 'F', '3', '7', 'C', 'E', 'x', '#', ':', '.'];
-    const BRAILLE_GLYPHS = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏', '⣿'];
-    const MATRIX_GLYPHS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'Z', 'X', 'Y', '$'];
 
     const render = () => {
       frame++;
-      const source = sourceCanvasRef.current;
-      if (!source) {
+      const img = imageRef.current;
+      const width = canvas.width;
+      const height = canvas.height;
+
+      if (!img || !img.complete) {
+        // En attente du chargement
+        ctx.fillStyle = '#0a0a0e';
+        ctx.fillRect(0, 0, width, height);
+        ctx.fillStyle = '#71717a';
+        ctx.font = '14px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('Initialisation du pipeline HandArt Canvas2D...', width / 2, height / 2);
         animId = requestAnimationFrame(render);
         return;
       }
 
-      const width = canvas.width;
-      const height = canvas.height;
-      const cellSize = Math.max(6, params.cellSize);
-
-      // Étape 1 : Fond selon bgMode (ici solide noir #040406)
-      ctx.fillStyle = '#020408';
-      ctx.fillRect(0, 0, width, height);
-
-      // Récupération de l'image source à la taille cible
+      // Échantillonnage de l'image source dans un canvas hors-écran
       const offCanvas = document.createElement('canvas');
       offCanvas.width = width;
       offCanvas.height = height;
       const offCtx = offCanvas.getContext('2d');
       if (!offCtx) return;
-      offCtx.drawImage(source, 0, 0, width, height);
 
+      offCtx.drawImage(img, 0, 0, width, height);
       const imgData = offCtx.getImageData(0, 0, width, height);
       const data = imgData.data;
 
-      const cols = Math.floor(width / cellSize);
-      const rows = Math.floor(height / cellSize);
+      const size = cellSize;
+      const cols = Math.floor(width / size);
+      const rows = Math.floor(height / size);
 
-      // Préparation du buffer bloom si activé
+      const mouse = mouseRef.current;
+      const lensRadius = 150;
+
+      // 1. Fond du canevas
+      if (mode === 'hexdump') {
+        ctx.fillStyle = '#020408';
+        ctx.fillRect(0, 0, width, height);
+      } else {
+        // Fond légèrement chaud/marbre pour sublimer le style HandArt
+        ctx.fillStyle = '#b3aba0';
+        ctx.fillRect(0, 0, width, height);
+      }
+
+      // Buffer pour l'effet de bloom
       const bloomCanvas = document.createElement('canvas');
       bloomCanvas.width = width;
       bloomCanvas.height = height;
       const bCtx = bloomCanvas.getContext('2d');
 
-      ctx.font = `${Math.floor(cellSize * 0.95)}px "JetBrains Mono", monospace`;
+      ctx.font = `bold ${Math.floor(size * 0.9)}px "JetBrains Mono", monospace`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
 
@@ -210,157 +125,156 @@ export default function HandArtAsciiSection() {
         bCtx.textBaseline = 'middle';
       }
 
-      // Facteur de scintillement d'animation flicker
-      const flickerFactor = params.animated
-        ? Math.sin(frame * 0.25) * 0.15 + (Math.random() < 0.08 ? 0.3 : 0)
-        : 0;
+      // Scintillement d'animation flicker
+      const flickerFactor = Math.sin(frame * 0.2) * 0.12 + (Math.random() < 0.05 ? 0.25 : 0);
 
-      // Étape 2 & 3 : Découpage en cellules et échantillonnage de la luminance
+      // 2. Échantillonnage par cellule
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
-          const px = c * cellSize + Math.floor(cellSize / 2);
-          const py = r * cellSize + Math.floor(cellSize / 2);
+          const px = c * size;
+          const py = r * size;
+          const centerX = px + Math.floor(size / 2);
+          const centerY = py + Math.floor(size / 2);
 
-          const idx = (py * width + px) * 4;
+          const idx = (centerY * width + centerX) * 4;
           let red = data[idx] || 0;
           let green = data[idx + 1] || 0;
           let blue = data[idx + 2] || 0;
 
-          // Luminance standard
+          // Luminance normalisée (0 à 1)
           let lum = (0.299 * red + 0.587 * green + 0.114 * blue) / 255;
 
-          // Étape 4 : Ajustement de contraste (115)
-          const contrast = params.contrast / 100;
+          // Ajustement de contraste (115% de la recette 21st.dev)
+          const contrast = 1.15;
           lum = (lum - 0.5) * contrast + 0.5;
           lum = Math.max(0, Math.min(1, lum));
 
-          // Filtre de couverture (coverage 93%)
-          const cellHash = Math.sin(c * 12.9898 + r * 78.233) * 43758.5453;
-          const pseudoRand = cellHash - Math.floor(cellHash);
-          if (pseudoRand > params.coverage / 100) continue;
+          // Calcul de la distance à la souris pour le mode scanner
+          const distToMouse = Math.hypot(centerX - mouse.x, centerY - mouse.y);
+          const inLens = mode === 'scanner' && mouse.active && distToMouse < lensRadius;
 
-          // Détection de contour (edgeEmphasis 40)
-          let isEdge = false;
-          if (params.edgeEmphasis > 0 && c > 0 && r > 0 && c < cols - 1 && r < rows - 1) {
-            const rightIdx = (py * width + (px + cellSize)) * 4;
-            const downIdx = ((py + cellSize) * width + px) * 4;
-            const rLum = (0.299 * data[rightIdx] + 0.587 * data[rightIdx + 1] + 0.114 * data[rightIdx + 2]) / 255;
-            const dLum = (0.299 * data[downIdx] + 0.587 * data[downIdx + 1] + 0.114 * data[downIdx + 2]) / 255;
-            const diff = Math.abs(lum - rLum) + Math.abs(lum - dLum);
-            if (diff > (100 - params.edgeEmphasis) / 100) {
-              isEdge = true;
-              lum = Math.min(1, lum + 0.25);
+          if (mode === 'classic' || (mode === 'scanner' && !inLens)) {
+            // ==========================================
+            // RENDU "HANDART" CLASSIQUE (STYLE IMAGE 1)
+            // ==========================================
+            // Remplissage de la cellule avec la teinte moyenne échantillonnée
+            ctx.fillStyle = `rgb(${red}, ${green}, ${blue})`;
+            ctx.fillRect(px, py, size, size);
+
+            // Grille fine de délimitation de la cellule
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.08)';
+            ctx.lineWidth = 0.5;
+            ctx.strokeRect(px, py, size, size);
+
+            // Micro-lignes horizontales gravées caractéristiques du HandArt
+            // Plus la zone est sombre, plus le trait est épais et marqué
+            const darkWeight = Math.max(0, 1 - lum);
+            if (darkWeight > 0.12) {
+              const lineThickness = Math.max(0.7, darkWeight * 2.2);
+              ctx.fillStyle = `rgba(35, 25, 18, ${Math.min(0.85, darkWeight * 1.1)})`;
+              ctx.fillRect(px, py + Math.floor(size / 2) - lineThickness / 2, size, lineThickness);
             }
-          }
-
-          // Modulation par animation flicker
-          let animatedLum = Math.max(0, Math.min(1, lum + flickerFactor * (pseudoRand > 0.5 ? 0.2 : -0.2)));
-
-          // Sélection du glyphe selon renderMode
-          let glyph = '0';
-          if (params.renderMode === 'hexdump') {
-            const glyphIdx = Math.floor(animatedLum * (HEX_GLYPHS.length - 1));
-            glyph = HEX_GLYPHS[glyphIdx] || '0';
-          } else if (params.renderMode === 'matrix') {
-            const glyphIdx = (frame + c * 3 + r * 7) % MATRIX_GLYPHS.length;
-            glyph = MATRIX_GLYPHS[glyphIdx];
-          } else if (params.renderMode === 'braille') {
-            const glyphIdx = Math.floor(animatedLum * (BRAILLE_GLYPHS.length - 1));
-            glyph = BRAILLE_GLYPHS[glyphIdx];
           } else {
-            // mode characters
-            const set = ' .:-=+*#%@';
-            const glyphIdx = Math.floor(animatedLum * (set.length - 1));
-            glyph = set[glyphIdx];
-          }
+            // ==========================================
+            // RENDU CYBER HEXDUMP (#00ff66 MATRIX FLICKER)
+            // ==========================================
+            const animatedLum = Math.max(0, Math.min(1, lum + flickerFactor * 0.2));
+            const glyphIdx = Math.floor(animatedLum * (HEX_GLYPHS.length - 1));
+            const glyph = HEX_GLYPHS[glyphIdx] || '0';
 
-          // Application de la teinte #00ff66 à tintOpacity (45%)
-          // Couleur de base teintée
-          const tintR = 0;
-          const tintG = 255;
-          const tintB = 102;
-          const tintAlpha = params.tintOpacity / 100;
+            // Teinte Matrix #00ff66 avec opacité 45%
+            const tintR = 0;
+            const tintG = 255;
+            const tintB = 102;
+            const tintAlpha = 0.45;
 
-          const outR = Math.floor(red * (1 - tintAlpha) + tintR * tintAlpha * animatedLum);
-          const outG = Math.floor(green * (1 - tintAlpha) + tintG * tintAlpha * animatedLum);
-          const outB = Math.floor(blue * (1 - tintAlpha) + tintB * tintAlpha * animatedLum);
+            const outR = Math.floor(red * (1 - tintAlpha) + tintR * tintAlpha * animatedLum);
+            const outG = Math.floor(green * (1 - tintAlpha) + tintG * tintAlpha * animatedLum);
+            const outB = Math.floor(blue * (1 - tintAlpha) + tintB * tintAlpha * animatedLum);
 
-          // Rendu du glyphe
-          const alpha = isEdge ? 1 : Math.max(0.18, animatedLum);
-          ctx.fillStyle = `rgba(${outR}, ${outG}, ${outB}, ${alpha})`;
-          ctx.fillText(glyph, px, py);
+            if (inLens) {
+              // Fond sombre dans la lentille scanner
+              ctx.fillStyle = 'rgba(2, 6, 12, 0.92)';
+              ctx.fillRect(px, py, size, size);
+            }
 
-          // Accumulation bloom pour les zones lumineuses
-          if (bCtx && params.bloom > 0 && animatedLum > 0.65) {
-            bCtx.fillStyle = `rgba(${outR}, ${outG}, ${outB}, 0.8)`;
-            bCtx.fillText(glyph, px, py);
+            const alpha = inLens ? 1 : Math.max(0.2, animatedLum);
+            ctx.fillStyle = `rgba(${outR}, ${outG}, ${outB}, ${alpha})`;
+            ctx.fillText(glyph, centerX, centerY);
+
+            // Accumulation bloom
+            if (bCtx && animatedLum > 0.6) {
+              bCtx.fillStyle = `rgba(${outR}, ${outG}, ${outB}, 0.85)`;
+              bCtx.fillText(glyph, centerX, centerY);
+            }
           }
         }
       }
 
-      // Étape 5 : Post-effets (pfx)
-      // 5.1 Bloom (lueur diffuse)
-      if (bCtx && params.bloom > 0) {
+      // 3. Post-effets visuels de la recette 21st.dev
+      // 3.1 Bloom (lueur diffuse) en mode hexdump / scanner
+      if (bCtx && (mode === 'hexdump' || mode === 'scanner')) {
         ctx.save();
         ctx.globalCompositeOperation = 'lighter';
-        ctx.filter = `blur(${Math.floor(params.bloom * 0.12)}px)`;
+        ctx.filter = 'blur(6px)';
         ctx.drawImage(bloomCanvas, 0, 0);
         ctx.restore();
       }
 
-      // 5.2 Aberration Chromatique (chromatic 40)
-      if (params.chromatic > 0 && Math.random() < 0.35) {
-        const offset = (params.chromatic / 100) * 4;
+      // 3.2 Aberration Chromatique intermittente (chromatic 40)
+      if (mode === 'hexdump' && Math.random() < 0.25) {
         ctx.save();
         ctx.globalCompositeOperation = 'screen';
-        ctx.drawImage(canvas, -offset, 0, width, height);
-        ctx.drawImage(canvas, offset, 0, width, height);
+        ctx.drawImage(canvas, -2, 0, width, height);
+        ctx.drawImage(canvas, 2, 0, width, height);
         ctx.restore();
       }
 
-      // 5.3 ScanLines CRT (scanLines 28)
-      if (params.scanLines > 0) {
-        const lineAlpha = (params.scanLines / 100) * 0.35;
-        ctx.fillStyle = `rgba(0, 0, 0, ${lineAlpha})`;
-        for (let y = 0; y < height; y += 3) {
-          ctx.fillRect(0, y, width, 1.2);
-        }
+      // 3.3 ScanLines CRT fines horizontales (scanLines 28)
+      ctx.fillStyle = mode === 'hexdump' ? 'rgba(0, 0, 0, 0.25)' : 'rgba(0, 0, 0, 0.12)';
+      for (let y = 0; y < height; y += 3) {
+        ctx.fillRect(0, y, width, 1);
       }
 
-      // 5.4 Glitch horizontal intermittent (glitch 20)
-      if (params.glitch > 0 && Math.random() < (params.glitch / 100) * 0.25) {
-        const sliceY = Math.random() * height;
-        const sliceH = Math.random() * 25 + 5;
-        const sliceShift = (Math.random() - 0.5) * 16;
-        ctx.drawImage(canvas, 0, sliceY, width, sliceH, sliceShift, sliceY, width, sliceH);
-      }
+      // 3.4 Vignette radiale sombre (vignette 38)
+      const vGrad = ctx.createRadialGradient(
+        width / 2,
+        height / 2,
+        width * 0.35,
+        width / 2,
+        height / 2,
+        width * 0.72
+      );
+      vGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
+      vGrad.addColorStop(1, mode === 'hexdump' ? 'rgba(2, 4, 8, 0.75)' : 'rgba(20, 15, 10, 0.45)');
+      ctx.fillStyle = vGrad;
+      ctx.fillRect(0, 0, width, height);
 
-      // 5.5 Grain de film argentique (filmGrain 40)
-      if (params.filmGrain > 0) {
-        const grainAlpha = (params.filmGrain / 100) * 0.14;
-        ctx.fillStyle = `rgba(255, 255, 255, ${grainAlpha})`;
-        for (let i = 0; i < 400; i++) {
-          const gx = Math.random() * width;
-          const gy = Math.random() * height;
-          ctx.fillRect(gx, gy, 1, 1);
-        }
-      }
+      // 3.5 Overlay visuel de la lentille scanner
+      if (mode === 'scanner' && mouse.active) {
+        ctx.save();
+        ctx.strokeStyle = '#00ff66';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(mouse.x, mouse.y, lensRadius, 0, Math.PI * 2);
+        ctx.stroke();
 
-      // 5.6 Vignette radiale sombre (vignette 38)
-      if (params.vignette > 0) {
-        const vGrad = ctx.createRadialGradient(
-          width / 2,
-          height / 2,
-          width * 0.3,
-          width / 2,
-          height / 2,
-          width * 0.72
-        );
-        const vigIntensity = (params.vignette / 100) * 0.85;
-        vGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
-        vGrad.addColorStop(1, `rgba(2, 4, 8, ${vigIntensity})`);
-        ctx.fillStyle = vGrad;
-        ctx.fillRect(0, 0, width, height);
+        // Réticule central
+        ctx.strokeStyle = 'rgba(0, 255, 102, 0.6)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(mouse.x - 14, mouse.y);
+        ctx.lineTo(mouse.x + 14, mouse.y);
+        ctx.moveTo(mouse.x, mouse.y - 14);
+        ctx.lineTo(mouse.x, mouse.y + 14);
+        ctx.stroke();
+
+        // Données télémétriques de la lentille
+        ctx.fillStyle = '#00ff66';
+        ctx.font = '10px monospace';
+        ctx.fillText(`TARGET: [${mouse.x}, ${mouse.y}]`, mouse.x + 18, mouse.y - 18);
+        ctx.fillText(`RASTER: ${cellSize}px // FLICKER`, mouse.x + 18, mouse.y - 6);
+        ctx.restore();
       }
 
       animId = requestAnimationFrame(render);
@@ -371,234 +285,156 @@ export default function HandArtAsciiSection() {
     return () => {
       cancelAnimationFrame(animId);
     };
-  }, [params, activeSubject]);
+  }, [mode, cellSize, isLoaded]);
 
   return (
     <section
       id="ascii-art"
-      className="py-24 sm:py-36 bg-black/80 border-t border-[#1a1a1e] relative backdrop-blur-sm overflow-hidden"
+      className="py-24 sm:py-36 bg-black border-t border-[#1a1a1e] relative overflow-hidden"
     >
-      {/* Halo d'ambiance vert matrix / cyan diffus */}
-      <div className="absolute top-1/2 left-1/3 -translate-y-1/2 w-[600px] h-[600px] bg-emerald-600/10 rounded-full blur-[150px] pointer-events-none" />
+      {/* Halos d'ambiance bleus et émeraude discrets */}
+      <div className="absolute top-1/2 left-1/3 -translate-y-1/2 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[160px] pointer-events-none" />
+      <div className="absolute top-1/3 right-1/4 w-[500px] h-[500px] bg-emerald-600/10 rounded-full blur-[150px] pointer-events-none" />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 relative z-10">
-        {/* En-tête de section */}
+        {/* En-tête élégant aligné avec le design system Aura.build */}
         <ScrollReveal direction="up">
-          <div className="text-center max-w-2xl mx-auto mb-14 space-y-3">
+          <div className="text-center max-w-2xl mx-auto mb-12 space-y-3">
             <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-medium bg-[#0c0c0e] text-emerald-400 border border-[#222228]">
               <Terminal className="w-3.5 h-3.5" />
-              <span>21st.dev Canvas2D Recipe</span>
+              <span>21st.dev // HandArt Canvas2D Engine</span>
             </div>
 
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white">
-              HandArt ASCII Raster Engine
+              The Touch of Intelligence
             </h2>
 
             <p className="text-neutral-400 text-sm sm:text-base font-normal">
-              Reconstitution fidèle du pipeline de rendu ASCII-art de 21st.dev avec décomposition raster,
-              échantillonnage par cellule, teinte matrix, post-effets CRT et animation flicker dynamique.
+              Reconstitution fidèle du chef-d'œuvre "HandArt" de 21st.dev. Échantillonnage matriciel en temps réel,
+              micro-lignes raster gravées et décodage vectoriel au curseur.
             </p>
           </div>
         </ScrollReveal>
 
-        {/* Console de rendu principale */}
+        {/* Barre de commandes et de modes intégrée au style du site */}
+        <ScrollReveal direction="up" delay={0.1}>
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-6 px-2">
+            {/* Sélecteur de mode de rendu */}
+            <div className="inline-flex items-center p-1 rounded-2xl bg-[#0c0c0e] border border-[#1a1a1e] shadow-xl">
+              <button
+                onClick={() => setMode('classic')}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-mono transition flex items-center space-x-2 ${
+                  mode === 'classic'
+                    ? 'bg-neutral-800 text-white font-semibold shadow'
+                    : 'text-neutral-400 hover:text-white'
+                }`}
+              >
+                <Grid className="w-3.5 h-3.5 text-amber-400" />
+                <span>HandArt Classique</span>
+              </button>
+
+              <button
+                onClick={() => setMode('scanner')}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-mono transition flex items-center space-x-2 ${
+                  mode === 'scanner'
+                    ? 'bg-emerald-600 text-white font-semibold shadow-[0_0_15px_rgba(16,185,129,0.4)]'
+                    : 'text-neutral-400 hover:text-white'
+                }`}
+              >
+                <Crosshair className="w-3.5 h-3.5 text-emerald-300" />
+                <span>Scanner Interactif</span>
+              </button>
+
+              <button
+                onClick={() => setMode('hexdump')}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-mono transition flex items-center space-x-2 ${
+                  mode === 'hexdump'
+                    ? 'bg-blue-600 text-white font-semibold shadow-[0_0_15px_rgba(37,99,235,0.4)]'
+                    : 'text-neutral-400 hover:text-white'
+                }`}
+              >
+                <Terminal className="w-3.5 h-3.5 text-blue-300" />
+                <span>Matrice Hexdump</span>
+              </button>
+            </div>
+
+            {/* Ajustement fin de la résolution matricielle */}
+            <div className="flex items-center space-x-2 text-xs font-mono text-neutral-400 bg-[#0c0c0e] border border-[#1a1a1e] px-3.5 py-1.5 rounded-2xl">
+              <span className="text-neutral-500">Raster Cell:</span>
+              {[8, 10, 12, 14].map((sz) => (
+                <button
+                  key={sz}
+                  onClick={() => setCellSize(sz)}
+                  className={`px-2 py-0.5 rounded-md transition ${
+                    cellSize === sz
+                      ? 'bg-white text-black font-bold'
+                      : 'hover:text-white text-neutral-400'
+                  }`}
+                >
+                  {sz}px
+                </button>
+              ))}
+            </div>
+          </div>
+        </ScrollReveal>
+
+        {/* Le Grand Écran Canvas2D Panoramique (Style Visuel Image 1) */}
         <ScrollReveal direction="up" delay={0.15}>
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
-            {/* Écran d'affichage Canvas2D */}
-            <div className="lg:col-span-8 flex flex-col justify-between rounded-3xl bg-[#0c0c0e] border border-[#1a1a1e] p-3 sm:p-4 shadow-2xl overflow-hidden relative group">
-              {/* Barre de fenêtre CRT */}
-              <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#1a1a1e] bg-black/70 rounded-t-2xl text-xs font-mono">
-                <div className="flex items-center space-x-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-rose-500/80" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
-                  <span className="ml-2 text-neutral-400 text-[11px]">
-                    21st.dev // mode: {params.renderMode} [tint: {params.tint}]
-                  </span>
-                </div>
-                <div className="flex items-center space-x-2 text-emerald-400 text-[11px]">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                  <span>FLICKER ACTIVE</span>
-                </div>
+          <div
+            ref={containerRef}
+            className="rounded-3xl bg-[#0c0c0e] border border-[#1a1a1e] p-2.5 sm:p-3 shadow-[0_25px_60px_rgba(0,0,0,0.9)] overflow-hidden relative group hover:border-[#26262b] transition-all duration-300"
+          >
+            {/* Liseré supérieur avec boutons CRT façon vitrine d'art */}
+            <div className="flex items-center justify-between px-4 py-2 bg-black/80 rounded-t-2xl border-b border-[#1a1a1e] text-xs font-mono">
+              <div className="flex items-center space-x-2">
+                <div className="w-2.5 h-2.5 rounded-full bg-rose-500/80" />
+                <div className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
+                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
+                <span className="ml-2 text-neutral-400 text-[11px]">
+                  21st.dev // HandArt (Creation of Adam) — {cellSize}px raster grid
+                </span>
               </div>
 
-              {/* Le Canvas Raster principal */}
-              <div className="relative w-full aspect-[16/10] bg-black rounded-b-2xl overflow-hidden flex items-center justify-center">
-                <canvas
-                  ref={canvasRef}
-                  width={680}
-                  height={420}
-                  className="w-full h-full object-contain"
-                />
-              </div>
-
-              {/* Bande inférieure d'état télémétrique */}
-              <div className="px-4 py-3 bg-black/80 border-t border-[#1a1a1e] rounded-b-2xl flex flex-wrap items-center justify-between gap-3 text-xs font-mono text-neutral-400">
-                <div className="flex items-center space-x-3">
-                  <span>Coverage: {params.coverage}%</span>
-                  <span>•</span>
-                  <span>Cell: {params.cellSize}px</span>
-                  <span>•</span>
-                  <span>Contrast: {params.contrast}%</span>
-                </div>
-                <div className="flex items-center space-x-2 text-emerald-400">
-                  <Zap className="w-3.5 h-3.5" />
-                  <span>60 FPS Raster Pipeline</span>
-                </div>
+              <div className="flex items-center space-x-3 text-[11px] text-neutral-400">
+                <span className="hidden sm:inline">Cursor: [{mousePos.x}, {mousePos.y}]</span>
+                <span className="text-emerald-400 font-semibold flex items-center space-x-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>60 FPS</span>
+                </span>
               </div>
             </div>
 
-            {/* Panneau de contrôle des paramètres (21st.dev recipe sliders) */}
-            <div className="lg:col-span-4 flex flex-col justify-between rounded-3xl bg-[#0c0c0e] border border-[#1a1a1e] p-6 space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between border-b border-[#1a1a1e] pb-3">
-                  <div className="flex items-center space-x-2 text-white font-semibold text-sm">
-                    <Sliders className="w-4 h-4 text-emerald-400" />
-                    <span>Paramètres du Recipe</span>
-                  </div>
-                  <button
-                    onClick={() =>
-                      setActiveSubject(activeSubject === 'sentinel' ? 'matrix-core' : 'sentinel')
-                    }
-                    className="text-[11px] font-mono px-2.5 py-1 rounded-full bg-black border border-[#1a1a1e] text-blue-400 hover:text-white transition"
-                  >
-                    Changer Sujet
-                  </button>
-                </div>
+            {/* Toile Canvas2D Haute Définition */}
+            <div className="relative w-full aspect-[16/9] sm:aspect-[1024/538] bg-black rounded-b-2xl overflow-hidden cursor-crosshair">
+              <canvas
+                ref={canvasRef}
+                width={1024}
+                height={538}
+                onMouseMove={handleMouseMove}
+                onMouseLeave={handleMouseLeave}
+                className="w-full h-full object-cover select-none"
+              />
 
-                {/* Mode de rendu (renderMode) */}
-                <div className="space-y-2">
-                  <span className="text-xs font-mono text-neutral-400 block">Render Mode</span>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    {[
-                      { id: 'hexdump', label: 'Hexdump' },
-                      { id: 'matrix', label: 'Matrix Rain' },
-                      { id: 'braille', label: 'Braille' },
-                      { id: 'characters', label: 'Characters' },
-                    ].map((mode) => (
-                      <button
-                        key={mode.id}
-                        onClick={() => setParams({ ...params, renderMode: mode.id })}
-                        className={`py-2 px-3 rounded-xl font-mono text-xs transition ${
-                          params.renderMode === mode.id
-                            ? 'bg-emerald-600 text-white font-semibold'
-                            : 'bg-black border border-[#1a1a1e] text-neutral-400 hover:text-white'
-                        }`}
-                      >
-                        {mode.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+              {/* Réticule d'angle technologique */}
+              <div className="absolute top-3 left-3 w-4 h-4 border-t-2 border-l-2 border-white/20 pointer-events-none" />
+              <div className="absolute top-3 right-3 w-4 h-4 border-t-2 border-r-2 border-white/20 pointer-events-none" />
+              <div className="absolute bottom-3 left-3 w-4 h-4 border-b-2 border-l-2 border-white/20 pointer-events-none" />
+              <div className="absolute bottom-3 right-3 w-4 h-4 border-b-2 border-r-2 border-white/20 pointer-events-none" />
+            </div>
 
-                {/* Taille de cellule (cellSize) */}
-                <div className="space-y-1.5 pt-2">
-                  <div className="flex justify-between text-xs font-mono">
-                    <span className="text-neutral-400">Cell Size</span>
-                    <span className="text-white">{params.cellSize}px</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="8"
-                    max="20"
-                    step="1"
-                    value={params.cellSize}
-                    onChange={(e) => setParams({ ...params, cellSize: Number(e.target.value) })}
-                    className="w-full accent-emerald-500 bg-neutral-900 rounded-lg cursor-pointer h-1.5"
-                  />
-                </div>
-
-                {/* Couverture (coverage 93%) */}
-                <div className="space-y-1.5">
-                  <div className="flex justify-between text-xs font-mono">
-                    <span className="text-neutral-400">Coverage</span>
-                    <span className="text-white">{params.coverage}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="60"
-                    max="100"
-                    value={params.coverage}
-                    onChange={(e) => setParams({ ...params, coverage: Number(e.target.value) })}
-                    className="w-full accent-emerald-500 bg-neutral-900 rounded-lg cursor-pointer h-1.5"
-                  />
-                </div>
-
-                {/* Contraste (contrast 115%) */}
-                <div className="space-y-1.5">
-                  <div className="flex justify-between text-xs font-mono">
-                    <span className="text-neutral-400">Contrast</span>
-                    <span className="text-white">{params.contrast}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="80"
-                    max="180"
-                    value={params.contrast}
-                    onChange={(e) => setParams({ ...params, contrast: Number(e.target.value) })}
-                    className="w-full accent-emerald-500 bg-neutral-900 rounded-lg cursor-pointer h-1.5"
-                  />
-                </div>
-
-                {/* Bloom Post-Effect (bloom 60) */}
-                <div className="space-y-1.5">
-                  <div className="flex justify-between text-xs font-mono">
-                    <span className="text-neutral-400">Bloom Intensity</span>
-                    <span className="text-white">{params.bloom}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={params.bloom}
-                    onChange={(e) => setParams({ ...params, bloom: Number(e.target.value) })}
-                    className="w-full accent-emerald-500 bg-neutral-900 rounded-lg cursor-pointer h-1.5"
-                  />
-                </div>
-
-                {/* Scanlines CRT (scanLines 28) */}
-                <div className="space-y-1.5">
-                  <div className="flex justify-between text-xs font-mono">
-                    <span className="text-neutral-400">CRT ScanLines</span>
-                    <span className="text-white">{params.scanLines}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="80"
-                    value={params.scanLines}
-                    onChange={(e) => setParams({ ...params, scanLines: Number(e.target.value) })}
-                    className="w-full accent-emerald-500 bg-neutral-900 rounded-lg cursor-pointer h-1.5"
-                  />
-                </div>
+            {/* Barre de télémétrie inférieure */}
+            <div className="px-4 py-2.5 bg-black/90 rounded-b-2xl border-t border-[#1a1a1e] flex flex-wrap items-center justify-between text-[11px] font-mono text-neutral-400">
+              <div className="flex items-center space-x-4">
+                <span>Subject: Michelangelo "The Creation of Adam"</span>
+                <span className="hidden md:inline">•</span>
+                <span className="hidden md:inline">Mode: {mode.toUpperCase()}</span>
+                <span className="hidden md:inline">•</span>
+                <span className="hidden md:inline">Coverage: 93%</span>
               </div>
-
-              {/* Bouton reset / réinitialisation aux paramètres JSON exacts */}
-              <button
-                onClick={() =>
-                  setParams({
-                    renderMode: 'hexdump',
-                    cellSize: 12,
-                    coverage: 93,
-                    contrast: 115,
-                    edgeEmphasis: 40,
-                    tint: '#00ff66',
-                    tintOpacity: 45,
-                    scanLines: 28,
-                    vignette: 38,
-                    chromatic: 40,
-                    bloom: 60,
-                    filmGrain: 40,
-                    glitch: 20,
-                    animStyle: 'flicker',
-                    animated: true,
-                  })
-                }
-                className="w-full py-2.5 rounded-full bg-black hover:bg-neutral-900 border border-[#1a1a1e] hover:border-neutral-700 text-xs font-mono text-neutral-300 hover:text-white transition flex items-center justify-center space-x-2"
-              >
-                <RefreshCw className="w-3.5 h-3.5 text-neutral-400" />
-                <span>Restaurer le Recipe 21st.dev</span>
-              </button>
+              <div className="text-emerald-400 flex items-center space-x-1.5">
+                <Sparkles className="w-3 h-3" />
+                <span>Pixel Mosaic & Hex Shaders Active</span>
+              </div>
             </div>
           </div>
         </ScrollReveal>
