@@ -1,6 +1,10 @@
 <div align="center">
 
-<img src="attack-watcher-high-resolution-logo.png" alt="Attack Watcher Logo" width="460" />
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="attack-watcher-logo-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="attack-watcher-logo-light.png">
+  <img alt="Attack Watcher Logo" src="attack-watcher-logo-dark.png" width="280" />
+</picture>
 
 ### Plateforme d'analyse et de détection d'attaques DDoS par Machine Learning en temps réel
 
