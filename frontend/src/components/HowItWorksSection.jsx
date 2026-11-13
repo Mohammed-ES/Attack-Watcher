@@ -227,23 +227,21 @@ export default function HowItWorksSection() {
 
               <div className="relative z-10 space-y-6">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-mono uppercase tracking-widest text-neutral-500">
-                    Enterprise Grade ML
-                  </span>
-                  <div className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-black border border-[#1a1a1e] text-[11px] font-mono text-emerald-400">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-                    <span>SYNCHRONISÉ</span>
+                  <div className="flex items-center space-x-2 text-neutral-400 font-mono text-xs">
+                    <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                    <span className="uppercase tracking-wider">Pipeline Stage Monitor</span>
                   </div>
+                  <span className="text-[11px] font-mono text-neutral-500">
+                    CIC-IDS2017
+                  </span>
                 </div>
 
-                <div className="space-y-3">
-                  <h3 className="text-2xl sm:text-3xl font-bold text-white tracking-tight leading-snug">
-                    Scalable intelligence architecture for modern enterprise
+                <div className="space-y-2">
+                  <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                    Télémétrie & Validation Pipeline
                   </h3>
                   <p className="text-neutral-400 text-xs sm:text-sm font-light leading-relaxed">
-                    Notre architecture découple rigoureusement la phase d'apprentissage statistique
-                    de l'exécution d'inférence en production. Les artefacts sérialisés garantissent une
-                    défense pérenne, sans re-calculs superflus.
+                    Inspection en direct des étapes d'ingestion, d'assainissement et d'inférence vectorielle du moteur supervisé.
                   </p>
                 </div>
 

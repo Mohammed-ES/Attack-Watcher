@@ -53,6 +53,11 @@ export default function Footer() {
                   Console Live
                 </button>
               </li>
+              <li>
+                <button onClick={() => scrollTo('faq')} className="hover:text-white transition">
+                  Questions / FAQ
+                </button>
+              </li>
             </ul>
           </div>
 

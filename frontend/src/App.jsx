@@ -5,7 +5,7 @@ import HeroSection from './components/HeroSection';
 import HowItWorksSection from './components/HowItWorksSection';
 import FeaturesGridSection from './components/FeaturesGridSection';
 import ConsoleSection from './components/ConsoleSection';
-import CtaBannerSection from './components/CtaBannerSection';
+import FaqSection from './components/FaqSection';
 import Footer from './components/Footer';
 import GlobalAsciiCanvas from './components/GlobalAsciiCanvas';
 import { getHealth, getFeaturesMetadata } from './services/api';
@@ -67,8 +67,8 @@ export default function App() {
         {/* 5. Console Interactive en direct (Saisie Manuelle 10 features & Analyse CSV) */}
         <ConsoleSection featuresMetadata={featuresMetadata} />
 
-        {/* 6. Bannière d'appel à l'action bicolore */}
-        <CtaBannerSection onLaunchConsole={scrollToConsole} />
+        {/* 6. Section "Questions, answered" : Foire aux questions technique interactive */}
+        <FaqSection />
 
         {/* 7. Pied de page épuré */}
         <Footer />

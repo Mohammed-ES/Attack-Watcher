@@ -3,8 +3,8 @@ import { useEffect, useRef } from 'react';
 /**
  * GlobalAsciiCanvas : Matrice ASCII interactive au passage de la souris
  * appliquée sur l'ensemble du site, du Hero jusqu'au Footer.
- * Génère une trame continue haute performance qui réagit en temps réel
- * aux mouvements du curseur.
+ * Calibrée avec une luminosité ambiante douce et amortie pour ne jamais
+ * gêner la lisibilité du texte et préserver le contraste des sélections.
  */
 export default function GlobalAsciiCanvas() {
   const canvasRef = useRef(null);
@@ -71,7 +71,6 @@ export default function GlobalAsciiCanvas() {
 
     const handleMouseMove = (e) => {
       const rect = canvas.getBoundingClientRect();
-      // Calcul des coordonnées relatives au canvas étendu
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
 
@@ -89,8 +88,8 @@ export default function GlobalAsciiCanvas() {
       tick++;
 
       // Interpolation douce du curseur
-      mouseRef.current.x += (mouseRef.current.targetX - mouseRef.current.x) * 0.2;
-      mouseRef.current.y += (mouseRef.current.targetY - mouseRef.current.y) * 0.2;
+      mouseRef.current.x += (mouseRef.current.targetX - mouseRef.current.x) * 0.18;
+      mouseRef.current.y += (mouseRef.current.targetY - mouseRef.current.y) * 0.18;
 
       ctx.clearRect(0, 0, width, height);
       ctx.font = '11px "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, monospace';
@@ -98,10 +97,17 @@ export default function GlobalAsciiCanvas() {
 
       const mouseX = mouseRef.current.x;
       const mouseY = mouseRef.current.y;
-      const radius = 220; // Rayon interactif de la souris
+      const radius = 200; // Rayon interactif de la souris
       const radiusSq = radius * radius;
 
-      // Optimisation viewport : on calcule seulement les lignes actuellement visibles à l'écran
+      // Détection de sélection de texte active pour atténuer le fond et garantir une lisibilité absolue
+      const hasTextSelection =
+        typeof window !== 'undefined' &&
+        window.getSelection &&
+        window.getSelection().toString().trim().length > 0;
+      const selectionFactor = hasTextSelection ? 0.2 : 1;
+
+      // Optimisation viewport : calcul des lignes visibles à l'écran
       const scrollY = window.scrollY;
       const viewHeight = window.innerHeight;
       const canvasTop = canvas.getBoundingClientRect().top + scrollY;
@@ -123,7 +129,7 @@ export default function GlobalAsciiCanvas() {
           if (distSq < radiusSq) {
             const factor = 1 - Math.sqrt(distSq) / radius;
             item.intensity = Math.max(item.intensity, factor);
-            if (Math.random() < 0.14) {
+            if (Math.random() < 0.12) {
               item.char = getRandomChar();
             }
           }
@@ -132,25 +138,26 @@ export default function GlobalAsciiCanvas() {
           item.intensity *= 0.91;
 
           if (item.intensity > 0.04) {
-            const alpha = Math.min(item.intensity, 1);
+            // Intensité plafonnée à une valeur douce pour ne jamais éblouir le texte
+            const alpha = Math.min(item.intensity * 0.32, 0.32) * selectionFactor;
 
             if (item.intensity > 0.5) {
-              // Éclat brillant blanc / cyan sous le curseur
-              ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+              // Reflet bleuté doux sous le curseur
+              ctx.fillStyle = `rgba(147, 197, 253, ${alpha})`;
               ctx.fillText(item.char, posX, posY);
             } else {
-              // Halo bleu électrique (#38bdf8 / #2563eb)
-              ctx.fillStyle = `rgba(56, 189, 248, ${alpha * 0.9})`;
+              // Halo bleu cobalt discret (#2563eb)
+              ctx.fillStyle = `rgba(37, 99, 235, ${alpha * 0.85})`;
               ctx.fillText(item.char, posX, posY);
             }
           } else {
-            // Trame subtile de fond avec onde sinusoïdale douce
+            // Trame d'ambiance très discrète en arrière-plan
             const wave = Math.sin(tick * 0.015 + c * 0.12 + r * 0.08) * 0.5 + 0.5;
-            if (wave > 0.9 && (c + r) % 2 === 0) {
-              ctx.fillStyle = 'rgba(59, 130, 246, 0.14)';
+            if (wave > 0.92 && (c + r) % 2 === 0) {
+              ctx.fillStyle = `rgba(37, 99, 235, ${0.07 * selectionFactor})`;
               ctx.fillText(item.char, posX, posY);
-            } else if ((c + r) % 3 === 0) {
-              ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+            } else if ((c + r) % 4 === 0) {
+              ctx.fillStyle = `rgba(255, 255, 255, ${0.02 * selectionFactor})`;
               ctx.fillText(item.baseChar, posX, posY);
             }
           }
@@ -172,7 +179,7 @@ export default function GlobalAsciiCanvas() {
   return (
     <canvas
       ref={canvasRef}
-      className="absolute inset-0 w-full h-full pointer-events-none z-[2]"
+      className="absolute inset-0 w-full h-full pointer-events-none z-[1]"
     />
   );
 }

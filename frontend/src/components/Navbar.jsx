@@ -87,6 +87,12 @@ export default function Navbar({ onNavigateToConsole }) {
             <span>Console Live</span>
             <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
           </button>
+          <button
+            onClick={() => scrollTo('faq')}
+            className="hover:text-white transition"
+          >
+            FAQ
+          </button>
         </nav>
 
         {/* Boutons d'action à droite */}
@@ -142,6 +148,12 @@ export default function Navbar({ onNavigateToConsole }) {
             className="text-left text-sm text-blue-400 font-semibold"
           >
             Console Live (Inférence Directe)
+          </button>
+          <button
+            onClick={() => scrollTo('faq')}
+            className="text-left text-sm text-neutral-300 hover:text-white"
+          >
+            Questions / FAQ
           </button>
           <div className="pt-2 border-t border-neutral-800 flex flex-col space-y-3">
             <a
