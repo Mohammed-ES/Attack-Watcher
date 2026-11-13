@@ -7,6 +7,17 @@ export default {
   theme: {
     extend: {
       colors: {
+        background: '#000000',
+        foreground: '#ffffff',
+        card: {
+          DEFAULT: '#0c0c0e',
+          foreground: '#ffffff',
+        },
+        muted: {
+          DEFAULT: '#141418',
+          foreground: '#9ca3af',
+        },
+        border: '#1a1a1e',
         aura: {
           black: '#000000',
           dark: '#050505',
@@ -19,6 +30,9 @@ export default {
           blueDeep: '#1e3a8a',
           textMuted: '#80808a',
         },
+      },
+      aspectRatio: {
+        '4/3': '4 / 3',
       },
       fontFamily: {
         sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
