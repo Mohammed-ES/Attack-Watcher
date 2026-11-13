@@ -1,21 +1,19 @@
 """
-Point d'entree Hugging Face Spaces combinant l'API FastAPI et l'interface de test Gradio.
+Point d'entree Hugging Face Spaces combinant l'API FastAPI et l'interface Gradio.
 """
 
-import importlib
-from backend.app.main import app
+import gradio as gr
+from backend.app.main import app as fastapi_app
 
-# Chargement dynamique pour eviter tout faux positif du linter local (Pyrefly / Pylance)
-try:
-    gr = importlib.import_module("gradio")
+# Creation d'une interface Gradio
+with gr.Blocks(title="Attack Watcher API") as demo:
+    gr.Markdown("# Attack Watcher - API de Detection DDoS")
+    gr.Markdown("Le backend FastAPI est en ligne.")
+    gr.Markdown("- [Documentation interactive Swagger](/docs)")
+    gr.Markdown("- [Verification de statut (Health check)](/api/health)")
 
-    with gr.Blocks(title="Attack Watcher API") as demo:
-        gr.Markdown("# Attack Watcher - API de Detection DDoS")
-        gr.Markdown(
-            "Le backend FastAPI fonctionne en continu. "
-            "Accedez a la documentation interactive Swagger sur [/docs](/docs)."
-        )
+# Montage de Gradio sur FastAPI
+app = gr.mount_gradio_app(fastapi_app, demo, path="/")
 
-    app = gr.mount_gradio_app(app, demo, path="/")
-except Exception:
-    pass
+if __name__ == "__main__":
+    demo.launch(server_name="0.0.0.0", server_port=7860)
