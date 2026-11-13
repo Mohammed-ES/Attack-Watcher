@@ -6,15 +6,15 @@ import { useMemo } from 'react';
  * avec reflet d'horizon argenté et dégradé bleu cobalt profond (media_1794529717275_a34f0531.jpg).
  */
 export default function HeroBeam() {
-  const COLUMN_COUNT = 26;
+  const COLUMN_COUNT = 24;
 
   // Calcul parabolique de la hauteur de chaque colonne
   const columns = useMemo(() => {
     return Array.from({ length: COLUMN_COUNT }, (_, i) => {
       const normalized = (i - (COLUMN_COUNT - 1) / 2) / ((COLUMN_COUNT - 1) / 2); // de -1 à +1
-      // Courbe en cuvette : plus basse au centre (~36%), culminante sur les côtés (~92%)
-      const heightPercent = 36 + Math.pow(Math.abs(normalized), 2.1) * 56;
-      const opacity = 0.8 + Math.pow(Math.abs(normalized), 1.6) * 0.2;
+      // Courbe en cuvette : plus basse au centre (~38%), culminante sur les côtés (~92%)
+      const heightPercent = 38 + Math.pow(Math.abs(normalized), 2.2) * 54;
+      const opacity = 0.85 + Math.pow(Math.abs(normalized), 1.5) * 0.15;
       return {
         id: i,
         height: `${heightPercent.toFixed(1)}%`,
@@ -24,12 +24,12 @@ export default function HeroBeam() {
   }, [COLUMN_COUNT]);
 
   return (
-    <div className="absolute inset-0 pointer-events-none overflow-hidden flex items-end justify-center -z-10 select-none">
-      {/* Halo d'ambiance bleu profond à la base */}
-      <div className="absolute bottom-0 w-[1400px] h-[500px] bg-gradient-to-t from-blue-700/35 via-blue-900/20 to-transparent blur-[120px] -z-20" />
+    <div className="absolute inset-0 pointer-events-none overflow-hidden flex items-end justify-center z-[1] select-none">
+      {/* Halo d'ambiance bleu électrique éclatant à la base */}
+      <div className="absolute bottom-0 w-full max-w-7xl h-[420px] bg-gradient-to-t from-blue-600/40 via-blue-700/20 to-transparent blur-[110px] pointer-events-none" />
 
       {/* Conteneur des colonnes verticales en U */}
-      <div className="relative w-full h-[650px] sm:h-[720px] flex items-end justify-between px-2 sm:px-6">
+      <div className="relative w-full h-[580px] sm:h-[680px] flex items-end justify-between px-2 sm:px-6">
         {columns.map((col) => (
           <div
             key={col.id}
@@ -44,13 +44,13 @@ export default function HeroBeam() {
               className="w-full h-full"
               style={{
                 background:
-                  'linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(37, 99, 235, 0.25) 25%, rgba(96, 165, 250, 0.7) 48%, rgba(255, 255, 255, 0.95) 54%, rgba(96, 165, 250, 0.85) 60%, rgba(37, 99, 235, 0.9) 78%, rgba(0, 0, 0, 0.95) 100%)',
+                  'linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(37, 99, 235, 0.35) 20%, rgba(96, 165, 250, 0.8) 46%, rgba(255, 255, 255, 0.98) 52%, rgba(96, 165, 250, 0.88) 58%, rgba(37, 99, 235, 0.95) 75%, rgba(15, 23, 42, 0.9) 92%, rgba(0, 0, 0, 1) 100%)',
               }}
             />
 
             {/* Bordure verticale fine pour séparer les lames */}
-            <div className="absolute inset-y-0 left-0 w-[1px] bg-white/10" />
-            <div className="absolute inset-y-0 right-0 w-[1px] bg-black/40" />
+            <div className="absolute inset-y-0 left-0 w-[1px] bg-white/15" />
+            <div className="absolute inset-y-0 right-0 w-[1px] bg-black/50" />
           </div>
         ))}
 
@@ -58,16 +58,16 @@ export default function HeroBeam() {
         <div
           className="absolute inset-x-0 pointer-events-none"
           style={{
-            bottom: '42%',
+            bottom: '46%',
             height: '2px',
             background:
-              'linear-gradient(90deg, transparent 5%, rgba(255,255,255,0.7) 50%, transparent 95%)',
-            filter: 'blur(1px)',
+              'linear-gradient(90deg, transparent 5%, rgba(255,255,255,0.85) 50%, transparent 95%)',
+            boxShadow: '0 0 16px rgba(255, 255, 255, 0.9), 0 0 35px rgba(59, 130, 246, 0.9)',
           }}
         />
 
         {/* Masque dégradé noir à la base pour fondre le bas des colonnes */}
-        <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black via-black/85 to-transparent pointer-events-none" />
       </div>
     </div>
   );

@@ -12,21 +12,22 @@ export default function HeroSection({ onLaunchConsole }) {
   return (
     <section
       id="hero"
-      className="relative pt-36 pb-28 sm:pt-48 sm:pb-36 overflow-hidden flex flex-col items-center justify-center text-center min-h-[85vh]"
+      className="relative pt-36 pb-32 sm:pt-48 sm:pb-40 overflow-hidden flex flex-col items-center justify-center text-center min-h-[90vh] bg-black isolate"
     >
-      {/* 1. Colonnes lumineuses en U d'Aura.build */}
+      {/* 1. Orgues lumineuses en U d'Aura.build */}
       <HeroBeam />
 
       {/* 2. Matrice ASCII interactive réagissant au mouvement de la souris */}
       <HeroAsciiCanvas />
 
+      {/* 3. Contenu de premier plan */}
       <div className="relative max-w-4xl mx-auto px-4 sm:px-6 z-10 space-y-7">
         {/* Titre Principal Majestueux (Exactement le style 'Cognition That Scales.') */}
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="text-4xl sm:text-6xl md:text-7xl font-bold tracking-tight text-white leading-[1.08] drop-shadow-sm"
+          className="text-4xl sm:text-6xl md:text-7xl font-bold tracking-tight text-white leading-[1.08] drop-shadow-md"
         >
           Detection That Scales.
         </motion.h1>
@@ -54,7 +55,7 @@ export default function HeroSection({ onLaunchConsole }) {
               if (onLaunchConsole) onLaunchConsole();
               scrollTo('console');
             }}
-            className="px-6 py-3 rounded-full bg-white hover:bg-neutral-200 text-black text-sm font-semibold tracking-tight transition shadow-xl shadow-blue-900/30 active:scale-95 flex items-center space-x-2"
+            className="px-6 py-3 rounded-full bg-white hover:bg-neutral-200 text-black text-sm font-semibold tracking-tight transition shadow-xl shadow-blue-900/40 active:scale-95 flex items-center space-x-2"
           >
             <span>Lancer la Console</span>
             <ArrowRight className="w-4 h-4" />
