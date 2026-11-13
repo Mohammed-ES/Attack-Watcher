@@ -9,7 +9,7 @@ export default function Footer() {
   return (
     <footer className="bg-black border-t border-[#1a1a1e] py-16 text-neutral-400 text-xs">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-10 mb-14">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-14">
           {/* Logo & Description */}
           <div className="md:col-span-2 space-y-4">
             <div className="flex items-center space-x-2.5 text-white">
@@ -93,18 +93,6 @@ export default function Footer() {
                   <ArrowUpRight className="w-3 h-3 text-neutral-500" />
                 </a>
               </li>
-            </ul>
-          </div>
-
-          {/* Colonne Conformité & Stack */}
-          <div className="space-y-3">
-            <h5 className="font-medium text-white text-xs">Technologies</h5>
-            <ul className="space-y-2 text-neutral-500 font-mono text-[11px]">
-              <li>Python 3.15 / FastAPI</li>
-              <li>Scikit-Learn 1.9.1</li>
-              <li>XGBoost 3.4.1</li>
-              <li>React 19 / Vite 8 / Tailwind</li>
-              <li>Licence MIT Open Source</li>
             </ul>
           </div>
         </div>

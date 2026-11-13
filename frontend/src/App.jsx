@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
+import HelloSection from './components/HelloSection';
 import HeroSection from './components/HeroSection';
 import HowItWorksSection from './components/HowItWorksSection';
 import FeaturesGridSection from './components/FeaturesGridSection';
 import ConsoleSection from './components/ConsoleSection';
 import CtaBannerSection from './components/CtaBannerSection';
 import Footer from './components/Footer';
-import { ScrollProgressBar } from './animations';
 import { getHealth, getFeaturesMetadata } from './services/api';
 
 export default function App() {
@@ -34,30 +34,37 @@ export default function App() {
     }
   };
 
+  const scrollToHero = () => {
+    const heroEl = document.getElementById('hero');
+    if (heroEl) {
+      heroEl.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-black text-neutral-100 selection:bg-blue-600 selection:text-white flex flex-col antialiased relative">
-      {/* Barre de progression fluide au scroll (Framer Motion) */}
-      <ScrollProgressBar />
-
       {/* Barre de navigation flottante façon pilule */}
       <Navbar onNavigateToConsole={scrollToConsole} />
 
-      {/* Hero Section "Detection That Scales." avec faisceaux Aura et Hello Showcase GIF */}
+      {/* 1. HELLO SECTION : Présente d'abord le logo .GIF officiel avec invitation au scroll */}
+      <HelloSection onExplore={scrollToHero} />
+
+      {/* 2. HERO SECTION : Style cinématique Morve / Aura avec boutons sci-fi et typographie en 3 lignes */}
       <HeroSection onLaunchConsole={scrollToConsole} />
 
-      {/* Section "How it works" avec l'accordéon interactif 01, 02, 03, 04 */}
+      {/* 3. Section "How it works" avec l'accordéon interactif 01, 02, 03, 04 */}
       <HowItWorksSection />
 
-      {/* Section "Intelligence at every layer" avec la grille de 6 cartes */}
+      {/* 4. Section "Intelligence at every layer" avec la grille de 6 cartes */}
       <FeaturesGridSection />
 
-      {/* Console Interactive en direct (Saisie Manuelle 10 features & Analyse CSV avec Recharts et pagination) */}
+      {/* 5. Console Interactive en direct (Saisie Manuelle 10 features & Analyse CSV avec Recharts et pagination) */}
       <ConsoleSection featuresMetadata={featuresMetadata} />
 
-      {/* Bannière d'appel à l'action bicolore (Noir + Bleu Royal) */}
+      {/* 6. Bannière d'appel à l'action bicolore (Noir + Bleu Royal) */}
       <CtaBannerSection onLaunchConsole={scrollToConsole} />
 
-      {/* Pied de page épuré */}
+      {/* 7. Pied de page épuré */}
       <Footer />
     </div>
   );
