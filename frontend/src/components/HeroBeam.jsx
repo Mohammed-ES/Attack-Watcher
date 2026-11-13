@@ -1,57 +1,74 @@
+import { useMemo } from 'react';
+
+/**
+ * HeroBeam : Rideau d'orgues lumineuses en U (Signature Aura.build).
+ * Reproduit fidèlement la composition parabolique de colonnes lumineuses
+ * avec reflet d'horizon argenté et dégradé bleu cobalt profond (media_1794529717275_a34f0531.jpg).
+ */
 export default function HeroBeam() {
+  const COLUMN_COUNT = 26;
+
+  // Calcul parabolique de la hauteur de chaque colonne
+  const columns = useMemo(() => {
+    return Array.from({ length: COLUMN_COUNT }, (_, i) => {
+      const normalized = (i - (COLUMN_COUNT - 1) / 2) / ((COLUMN_COUNT - 1) / 2); // de -1 à +1
+      // Courbe en cuvette : plus basse au centre (~36%), culminante sur les côtés (~92%)
+      const heightPercent = 36 + Math.pow(Math.abs(normalized), 2.1) * 56;
+      const opacity = 0.8 + Math.pow(Math.abs(normalized), 1.6) * 0.2;
+      return {
+        id: i,
+        height: `${heightPercent.toFixed(1)}%`,
+        opacity,
+      };
+    });
+  }, [COLUMN_COUNT]);
+
   return (
-    <div className="absolute inset-0 pointer-events-none overflow-hidden flex items-end justify-center -z-10">
-      {/* Halo radial bleu profond */}
-      <div className="absolute bottom-0 w-[1200px] h-[550px] bg-gradient-to-t from-blue-600/40 via-blue-700/20 to-transparent blur-3xl opacity-70"></div>
-      
-      {/* Rayons lumineux verticaux stylisés (Rideau de lumière) */}
-      <div className="relative w-full max-w-6xl h-[420px] flex items-end justify-center px-4">
-        {/* Rayons SVG vectoriels nets */}
-        <svg
-          viewBox="0 0 1000 400"
-          className="w-full h-full opacity-85"
-          fill="none"
-          preserveAspectRatio="none"
-        >
-          <defs>
-            <linearGradient id="beamGradientMain" x1="0%" y1="100%" x2="0%" y2="0%">
-              <stop offset="0%" stopColor="#ffffff" stopOpacity="0.9" />
-              <stop offset="25%" stopColor="#60a5fa" stopOpacity="0.8" />
-              <stop offset="60%" stopColor="#2563eb" stopOpacity="0.4" />
-              <stop offset="100%" stopColor="#1e3a8a" stopOpacity="0" />
-            </linearGradient>
-            <linearGradient id="beamGradientSide" x1="0%" y1="100%" x2="0%" y2="0%">
-              <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.7" />
-              <stop offset="50%" stopColor="#1d4ed8" stopOpacity="0.3" />
-              <stop offset="100%" stopColor="#0f172a" stopOpacity="0" />
-            </linearGradient>
-          </defs>
+    <div className="absolute inset-0 pointer-events-none overflow-hidden flex items-end justify-center -z-10 select-none">
+      {/* Halo d'ambiance bleu profond à la base */}
+      <div className="absolute bottom-0 w-[1400px] h-[500px] bg-gradient-to-t from-blue-700/35 via-blue-900/20 to-transparent blur-[120px] -z-20" />
 
-          {/* Faisceau central éclatant */}
-          <path d="M 450 400 L 485 0 L 515 0 L 550 400 Z" fill="url(#beamGradientMain)" />
-          
-          {/* Faisceaux gauche */}
-          <path d="M 410 400 L 450 0 L 475 0 L 440 400 Z" fill="url(#beamGradientSide)" opacity="0.9" />
-          <path d="M 360 400 L 400 0 L 420 0 L 385 400 Z" fill="url(#beamGradientSide)" opacity="0.8" />
-          <path d="M 300 400 L 330 0 L 350 0 L 320 400 Z" fill="url(#beamGradientSide)" opacity="0.65" />
-          <path d="M 230 400 L 250 0 L 270 0 L 245 400 Z" fill="url(#beamGradientSide)" opacity="0.5" />
-          <path d="M 150 400 L 160 0 L 180 0 L 165 400 Z" fill="url(#beamGradientSide)" opacity="0.35" />
-          <path d="M 60 400 L 70 0 L 90 0 L 75 400 Z" fill="url(#beamGradientSide)" opacity="0.2" />
+      {/* Conteneur des colonnes verticales en U */}
+      <div className="relative w-full h-[650px] sm:h-[720px] flex items-end justify-between px-2 sm:px-6">
+        {columns.map((col) => (
+          <div
+            key={col.id}
+            className="flex-1 mx-[1.5px] sm:mx-[2.5px] relative rounded-t-sm overflow-hidden"
+            style={{
+              height: col.height,
+              opacity: col.opacity,
+            }}
+          >
+            {/* Dégradé spécifique Aura.build avec la bande de brillance métallique au centre */}
+            <div
+              className="w-full h-full"
+              style={{
+                background:
+                  'linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(37, 99, 235, 0.25) 25%, rgba(96, 165, 250, 0.7) 48%, rgba(255, 255, 255, 0.95) 54%, rgba(96, 165, 250, 0.85) 60%, rgba(37, 99, 235, 0.9) 78%, rgba(0, 0, 0, 0.95) 100%)',
+              }}
+            />
 
-          {/* Faisceaux droite */}
-          <path d="M 590 400 L 550 0 L 525 0 L 560 400 Z" fill="url(#beamGradientSide)" opacity="0.9" />
-          <path d="M 640 400 L 600 0 L 580 0 L 615 400 Z" fill="url(#beamGradientSide)" opacity="0.8" />
-          <path d="M 700 400 L 670 0 L 650 0 L 680 400 Z" fill="url(#beamGradientSide)" opacity="0.65" />
-          <path d="M 770 400 L 750 0 L 730 0 L 755 400 Z" fill="url(#beamGradientSide)" opacity="0.5" />
-          <path d="M 850 400 L 840 0 L 820 0 L 835 400 Z" fill="url(#beamGradientSide)" opacity="0.35" />
-          <path d="M 940 400 L 930 0 L 910 0 L 925 400 Z" fill="url(#beamGradientSide)" opacity="0.2" />
-        </svg>
+            {/* Bordure verticale fine pour séparer les lames */}
+            <div className="absolute inset-y-0 left-0 w-[1px] bg-white/10" />
+            <div className="absolute inset-y-0 right-0 w-[1px] bg-black/40" />
+          </div>
+        ))}
 
-        {/* Lueur blanche horizontale au point d'impact bas */}
-        <div className="absolute bottom-0 w-3/4 h-[3px] bg-gradient-to-r from-transparent via-white to-transparent blur-[1px]"></div>
-        <div className="absolute bottom-0 w-1/2 h-[12px] bg-blue-400 blur-md"></div>
+        {/* Lueur d'horizon blanche à travers toutes les colonnes */}
+        <div
+          className="absolute inset-x-0 pointer-events-none"
+          style={{
+            bottom: '42%',
+            height: '2px',
+            background:
+              'linear-gradient(90deg, transparent 5%, rgba(255,255,255,0.7) 50%, transparent 95%)',
+            filter: 'blur(1px)',
+          }}
+        />
+
+        {/* Masque dégradé noir à la base pour fondre le bas des colonnes */}
+        <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none" />
       </div>
     </div>
   );
 }
-
