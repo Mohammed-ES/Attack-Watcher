@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, BarChart3, ShieldCheck, Key, Zap, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Search, BarChart3, ShieldCheck, Key, Zap, ArrowRight } from 'lucide-react';
 import { ScrollReveal } from '../animations';
 
 export default function HowItWorksSection() {
@@ -13,7 +13,6 @@ export default function HowItWorksSection() {
       desc: 'Capture et extraction vectorielle des flux TCP/IP à partir des paquets réseau bruts du dataset CIC-IDS2017.',
       icon: Search,
       yOffset: 'translate-y-0', // Position haute
-      telemetry: '10 Features Clés',
     },
     {
       num: '02',
@@ -22,7 +21,6 @@ export default function HowItWorksSection() {
       desc: 'Normalisation StandardScaler fittée strictement post-split sans fuite de données statistique vers le test.',
       icon: BarChart3,
       yOffset: 'translate-y-8', // Position basse (ondulation)
-      telemetry: 'Zero Leakage Split',
     },
     {
       num: '03',
@@ -31,7 +29,6 @@ export default function HowItWorksSection() {
       desc: 'Classification microseconde (< 0.05 ms) par RandomForest optimisé face à XGBoost pour une précision absolue.',
       icon: ShieldCheck,
       yOffset: '-translate-y-2', // Position haute (ondulation)
-      telemetry: 'Latence < 0.05 ms',
     },
     {
       num: '04',
@@ -40,7 +37,6 @@ export default function HowItWorksSection() {
       desc: 'Discrimination certifiée entre trafic bénin et attaque DDoS par saturation, prête pour export SIEM et audit.',
       icon: Key,
       yOffset: 'translate-y-6', // Position basse (ondulation)
-      telemetry: 'Bénin vs DDoS',
     },
   ];
 
@@ -203,14 +199,6 @@ export default function HowItWorksSection() {
                       <p className="text-xs sm:text-sm text-neutral-400 font-normal leading-relaxed">
                         {step.desc}
                       </p>
-
-                      {/* Tag télémétrique discret */}
-                      <div className="pt-2">
-                        <span className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-black/80 border border-[#1a1a1e] text-neutral-400 group-hover:text-blue-300 group-hover:border-blue-500/30 transition">
-                          <CheckCircle2 className="w-3 h-3 text-blue-500" />
-                          <span>{step.telemetry}</span>
-                        </span>
-                      </div>
                     </div>
                   </div>
                 </ScrollReveal>

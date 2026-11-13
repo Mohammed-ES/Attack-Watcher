@@ -1,13 +1,19 @@
-# Attack Watcher
+<div align="center">
 
-Plateforme d'analyse et de détection d'attaques DDoS par Machine Learning en temps réel.
+<img src="attack-watcher-high-resolution-logo.png" alt="Attack Watcher Logo" width="460" />
+
+### Plateforme d'analyse et de détection d'attaques DDoS par Machine Learning en temps réel
 
 [![CI - Attack Watcher](https://github.com/Mohammed-ES/Attack-Watcher/actions/workflows/ci.yml/badge.svg)](https://github.com/Mohammed-ES/Attack-Watcher/actions/workflows/ci.yml)
-[![Python](https://img.shields.io/badge/Python-3.13%20%7C%203.15-blue.svg)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg)](https://fastapi.tiangolo.com/)
-[![React](https://img.shields.io/badge/React-19-61DAFB.svg)](https://react.dev/)
-[![Vite](https://img.shields.io/badge/Vite-8-646CFF.svg)](https://vite.dev/)
+[![Python](https://img.shields.io/badge/Python-3.13%20%7C%203.15-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![React](https://img.shields.io/badge/React-19-61DAFB.svg?logo=react&logoColor=black)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Vite-8-646CFF.svg?logo=vite&logoColor=white)](https://vite.dev/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC.svg?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![Vercel Ready](https://img.shields.io/badge/Deploy-Vercel-black.svg?logo=vercel&logoColor=white)](https://vercel.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+</div>
 
 ---
 
@@ -16,8 +22,9 @@ Plateforme d'analyse et de détection d'attaques DDoS par Machine Learning en te
 - [Présentation](#présentation)
 - [Fonctionnalités Principales](#fonctionnalités-principales)
 - [Architecture & Technologies](#architecture--technologies)
-- [Jeu de Données et Sources](#jeu-de-données-et-sources)
+- [Jeu de Données et Benchmark (CIC-IDS2017)](#jeu-de-données-et-benchmark-cic-ids2017)
 - [Installation et Démarrage Rapide](#installation-et-démarrage-rapide)
+- [Déploiement sur Vercel](#déploiement-sur-vercel)
 - [Tests et Qualité de Code](#tests-et-qualité-de-code)
 - [Intégration Continue (CI)](#intégration-continue-ci)
 - [Licence](#licence)
@@ -26,9 +33,9 @@ Plateforme d'analyse et de détection d'attaques DDoS par Machine Learning en te
 
 ## Présentation
 
-**Attack Watcher** est une application web destinée aux équipes de sécurité informatique et aux ingénieurs réseau. Elle permet d'identifier et de classifier les flux de trafic réseau afin de détecter des comportements caractéristiques d'attaques par déni de service distribué (DDoS).
+**Attack Watcher** est une application web conçue pour les équipes de cybersécurité (SOC / CERT), les administrateurs d'infrastructure et les ingénieurs réseau. Elle permet d'inspecter et de classifier les flux de trafic TCP/IP afin de détecter avec certitude les attaques par déni de service distribué (DDoS).
 
-Le système exploite des modèles d'apprentissage automatique supervisé entraînés sur des caractéristiques réseau discriminantes, offrant à la fois une interface d'inférence unitaire pour des tests ciblés et un moteur d'analyse par lot pour le traitement de fichiers de capture au format CSV.
+Le système s'appuie sur des modèles d'apprentissage automatique supervisé entraînés sur des caractéristiques réseau discriminantes, offrant à la fois une interface d'inférence unitaire pour des tests ciblés et un moteur d'analyse par lot pour le traitement de fichiers de capture au format CSV.
 
 Pour une description exhaustive des choix techniques, consultez le document [ARCHITECTURE.md](ARCHITECTURE.md).
 
@@ -36,19 +43,18 @@ Pour une description exhaustive des choix techniques, consultez le document [ARC
 
 ## Fonctionnalités Principales
 
-- **Inférence Unitaire en Temps Réel** : Formulaire interactif permettant de renseigner 10 caractéristiques d'un flux réseau et d'obtenir immédiatement le verdict ("Normal" ou "Attaque DDoS"), la probabilité calculée et le degré de certitude.
-- **Présélections de Test** : Chargement en un clic de profils de flux représentatifs (trafic légitime ou attaque DDoS confirmée).
-- **Analyse par Lot (Fichiers CSV)** : Téléversement de fichiers de capture réseau volumineux avec traitement vectorisé sans latence.
-- **Tableau de Bord Statistique** : Synthèse immédiate affichant le total de flux analysés, le nombre de flux normaux, le nombre d'attaques identifiées et le taux global d'infection.
-- **Visualisations Interactives** : Graphiques vectoriels détaillant la proportion des flux et la répartition par paliers de probabilité de risque.
-- **Tableau d'Exploration Paginé** : Navigation fluide dans les résultats avec recherche textuelle par port, tri et filtrage dynamique par statut.
-- **Export des Résultats Enrichis** : Téléchargement du fichier CSV d'origine complété des colonnes de prédiction et de probabilité.
+- **Inférence Unitaire Ultra-Rapide (< 0.05 ms)** : Formulaire interactif permettant de renseigner les 10 caractéristiques d'un flux réseau et d'obtenir immédiatement le verdict ("Normal" ou "Attaque DDoS"), la probabilité calculée et l'analyse contextuelle.
+- **Présélections de Flux Prêtes à l'Emploi** : Chargement instantané en un clic de profils de test représentatifs (trafic web HTTP légitime ou attaque DDoS par inondation massive).
+- **Analyse par Lot (Fichiers CSV)** : Téléversement et streaming vectorisé de captures volumineuses sans saturation mémoire ni latence.
+- **Tableau de Bord & Visualisations Télémétriques** : Graphiques vectoriels interactifs détaillant la proportion des flux et la répartition par paliers de probabilité de risque.
+- **Exploration Paginée & Tri Dynamique** : Filtrage par statut de menace, recherche textuelle par port et tri multicritères.
+- **Export Enrichi SIEM** : Téléchargement du fichier CSV d'origine complété des colonnes `Attack_Watcher_Prediction` et `DDoS_Probability` pour intégration immédiate dans Splunk, Elastic ou Graylog.
 
 ---
 
 ## Architecture & Technologies
 
-Le projet s'articule autour de trois modules indépendants et hautement typés :
+Le projet s'articule autour de trois modules indépendants et rigoureusement typés :
 
 ```text
 Attack-Watcher/
@@ -65,18 +71,19 @@ Attack-Watcher/
 │   │   └── predictor.py     # Service d'inférence thread-safe
 │   ├── tests/               # Suite de tests Pytest (/predict, /predict-csv, validation 422)
 │   └── requirements.txt     # Dépendances backend
-├── frontend/                # Application Web React + Vite
+├── frontend/                # Application Web React 19 + Vite 8
 │   ├── src/
-│   │   ├── components/      # Composants d'interface modulaires (Lucide Icons, Recharts)
-│   │   ├── services/        # Couche de communication client (api.js)
-│   │   ├── App.jsx          # Composant principal
+│   │   ├── components/      # Composants d'interface modulaires (Hero, Console, FAQ, etc.)
+│   │   ├── services/        # Couche API résiliente (api.js avec support Vercel)
+│   │   ├── App.jsx          # Assemblage principal de l'application
 │   │   └── main.jsx         # Point d'entrée React
-│   ├── vite.config.js       # Configuration Vite avec proxy automatique /api
-│   ├── tailwind.config.js   # Configuration de style
-│   └── package.json         # Dépendances Node.js (React 19, Recharts 3, Vite 8)
-├── data/                    # Répertoire des datasets bruts (ignoré par Git)
-├── .github/workflows/
-│   └── ci.yml               # Workflow d'intégration continue GitHub Actions
+│   ├── vercel.json          # Configuration des routes SPA pour Vercel
+│   ├── .env.example         # Gabarit de configuration des variables d'environnement
+│   ├── vite.config.js       # Configuration Vite avec proxy /api et alias @
+│   ├── tailwind.config.js   # Configuration de style (Aura theme)
+│   └── package.json         # Dépendances frontend
+├── vercel.json              # Configuration racine pour le déploiement Vercel
+├── .env.example             # Gabarit racine des variables d'environnement
 ├── ARCHITECTURE.md          # Documentation technique détaillée
 ├── LICENSE                  # Licence logicielle MIT
 ├── pytest.ini               # Configuration des tests Python
@@ -87,16 +94,17 @@ Attack-Watcher/
 
 | Domaine | Outils et Bibliothèques |
 | :--- | :--- |
-| **Machine Learning** | Python 3.13 / 3.15, Scikit-Learn, XGBoost, Pandas, NumPy, Joblib |
+| **Machine Learning** | Python 3.13 / 3.15, Scikit-Learn 1.9.1, XGBoost 3.4.1, Pandas, NumPy, Joblib |
 | **Backend API** | FastAPI, Uvicorn, Pydantic v2, Python-Multipart |
 | **Qualité & Tests Backend** | Pytest, HTTPX, Ruff |
-| **Frontend** | React 19, Vite 8, Recharts 3, Tailwind CSS, Lucide Icons |
+| **Frontend** | React 19, Vite 8, Framer Motion, Recharts, Tailwind CSS, Lucide Icons |
 | **Qualité Frontend** | ESLint 9 |
+| **Hébergement & Déploiement** | Vercel (Frontend), Render / Railway / Docker (Backend) |
 | **CI / CD** | GitHub Actions |
 
 ---
 
-## Jeu de Données et Sources
+## Jeu de Données et Benchmark (CIC-IDS2017)
 
 Le modèle a été conçu et calibré à partir du jeu de données de référence international **CIC-IDS2017**, produit par le **Canadian Institute for Cybersecurity (CIC)** de l'Université du Nouveau-Brunswick (UNB).
 
@@ -105,27 +113,21 @@ Le modèle a été conçu et calibré à partir du jeu de données de référenc
 - **Publication scientifique** :
   > Iman Sharafaldin, Arash Habibi Lashkari, and Ali A. Ghorbani, *"Toward Generating a New Dataset for Security Analysis: Towards Developing Newer Intrusion Detection Datasets"*, Proceedings of the International Conference on Information Systems Security and Privacy (ICISSP), 2018.
 
-*(Le dossier `data/` et les fichiers volumineux `*.csv` sont strictement exclus du suivi Git via `.gitignore` pour préserver l'intégrité du dépôt).*
-
 ---
 
 ## Installation et Démarrage Rapide
 
-### 1. Prérequis
-- Python 3.13 ou ultérieur
-- Node.js LTS (v20 ou ultérieur) et npm
-- Git
-
-### 2. Cloner le Projet
+### 1. Cloner le Projet
 ```bash
 git clone https://github.com/Mohammed-ES/Attack-Watcher.git
 cd Attack-Watcher
 ```
 
-### 3. Environnement Python et Entraînement ML
+### 2. Environnement Python et Entraînement ML
 ```bash
 # Création et activation de l'environnement virtuel
 python -m venv .venv
+
 # Sur Windows :
 .venv\Scripts\activate
 # Sur Linux/macOS :
@@ -134,14 +136,14 @@ source .venv/bin/activate
 # Installation des dépendances ML
 pip install -r ml/requirements.txt
 
-# Entraînement et benchmark (utilise le fichier dans data/ ou bascule en mode synthétique)
+# Entraînement et benchmark (utilise le fichier dans data/ ou génère des données calibrées)
 python ml/train.py
 
-# Générer un fichier d'échantillons de test
+# Générer un fichier CSV d'échantillons de test
 python ml/generate_sample_csv.py --out data/sample_traffic.csv --rows 100
 ```
 
-### 4. Démarrer l'API Backend (FastAPI)
+### 3. Démarrer l'API Backend (FastAPI)
 ```bash
 pip install -r backend/requirements.txt
 uvicorn backend.app.main:app --reload --port 8000
@@ -149,7 +151,7 @@ uvicorn backend.app.main:app --reload --port 8000
 - API accessible sur : `http://localhost:8000`
 - Documentation interactive OpenAPI / Swagger : `http://localhost:8000/docs`
 
-### 5. Démarrer l'Interface Frontend (React + Vite)
+### 4. Démarrer l'Interface Frontend (React + Vite)
 Dans un second terminal :
 ```bash
 cd frontend
@@ -157,6 +159,29 @@ npm install
 npm run dev
 ```
 - Interface utilisateur accessible sur : `http://localhost:5173`
+
+---
+
+## Déploiement sur Vercel
+
+Le projet est préconfiguré pour un déploiement instantané sur **Vercel**.
+
+### Configuration Frontend sur Vercel
+
+1. Importez votre dépôt GitHub `Attack-Watcher` sur [Vercel](https://vercel.com).
+2. Configurez le projet :
+   - **Framework Preset** : `Vite`
+   - **Root Directory** : `./` (ou `frontend` si vous déployez le sous-dossier uniquement)
+   - **Build Command** : `cd frontend && npm install && npm run build` (ou `npm run build` si Root Directory est `frontend`)
+   - **Output Directory** : `frontend/dist` (ou `dist`)
+3. **Variables d'environnement (Environment Variables)** dans les paramètres Vercel :
+   - Ajoutez la variable suivante :
+     ```text
+     VITE_API_BASE_URL = https://votre-backend-fastapi.onrender.com/api
+     ```
+     *(Remplacez par l'URL publique où votre API FastAPI est hébergée sur Render, Railway, Fly.io ou votre serveur).*
+
+Le fichier `vercel.json` inclus prend en charge automatiquement le routage SPA pour éviter toute erreur 404 lors des rafraîchissements de page.
 
 ---
 
@@ -182,9 +207,8 @@ npm run build
 ## Intégration Continue (CI)
 
 Le fichier `.github/workflows/ci.yml` exécute les vérifications automatisées à chaque `push` et `pull_request` :
-- **Backend** : Contrôle de syntaxe Ruff et exécution de l'ensemble des tests Pytest sur Python 3.13 avec mise en cache des dépendances `pip`.
-- **Frontend** : Installation `npm ci`, validation ESLint et compilation de production Vite sur Node.js LTS avec mise en cache `npm`.
-- L'entraînement Machine Learning n'est jamais exécuté pendant la CI pour assurer la rapidité et la reproductibilité du pipeline.
+- **Backend** : Contrôle de syntaxe Ruff et exécution de l'ensemble des 9 tests Pytest sur Python 3.13 avec mise en cache des dépendances `pip`.
+- **Frontend** : Installation `npm ci`, validation ESLint (0 erreur, 0 avertissement) et compilation de production Vite sur Node.js LTS avec mise en cache `npm`.
 
 ---
 

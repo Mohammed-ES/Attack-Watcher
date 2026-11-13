@@ -1,29 +1,69 @@
 /**
  * Service de communication avec l'API FastAPI Attack Watcher.
+ * Supporte le proxy local Vite (/api) et le déploiement externe Vercel via VITE_API_BASE_URL.
  */
 
-const API_BASE = '/api';
+const API_BASE = import.meta.env.VITE_API_BASE_URL
+  ? import.meta.env.VITE_API_BASE_URL.replace(/\/$/, '')
+  : '/api';
+
+/**
+ * Traite la réponse HTTP de manière sécurisée en évitant les erreurs de syntaxe JSON.
+ */
+async function parseResponse(res) {
+  const text = await res.text();
+  let data = null;
+
+  if (text && text.trim().length > 0) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      // Réponse non-JSON (ex: erreur HTML de proxy ou texte brut)
+      data = { detail: text.length > 250 ? text.substring(0, 250) + '...' : text };
+    }
+  }
+
+  if (!res.ok) {
+    let errorMsg = data?.detail;
+    if (!errorMsg) {
+      if (res.status === 502 || res.status === 503 || res.status === 504) {
+        errorMsg = `Le backend FastAPI est inaccessible (Erreur ${res.status}). Assurez-vous que le serveur Python est démarré sur http://localhost:8000 ou configurez VITE_API_BASE_URL.`;
+      } else if (res.status === 404) {
+        errorMsg = `Endpoint API introuvable (${res.status}). Vérifiez la route ou la variable VITE_API_BASE_URL.`;
+      } else {
+        errorMsg = `Erreur de communication avec le serveur (${res.status})`;
+      }
+    }
+    throw new Error(errorMsg);
+  }
+
+  return data;
+}
 
 /**
  * Récupère l'état de santé du système et du modèle.
  */
 export async function getHealth() {
-  const res = await fetch(`${API_BASE}/health`);
-  if (!res.ok) {
-    throw new Error(`Erreur serveur (${res.status})`);
+  try {
+    const res = await fetch(`${API_BASE}/health`);
+    return await parseResponse(res);
+  } catch (err) {
+    console.warn('[Attack Watcher] Backend /health indisponible:', err.message);
+    throw err;
   }
-  return res.json();
 }
 
 /**
  * Récupère les métadonnées des features et statistiques ML.
  */
 export async function getFeaturesMetadata() {
-  const res = await fetch(`${API_BASE}/features`);
-  if (!res.ok) {
-    throw new Error(`Erreur lors de la récupération des métadonnées (${res.status})`);
+  try {
+    const res = await fetch(`${API_BASE}/features`);
+    return await parseResponse(res);
+  } catch (err) {
+    console.warn('[Attack Watcher] Backend /features indisponible:', err.message);
+    throw err;
   }
-  return res.json();
 }
 
 /**
@@ -38,11 +78,7 @@ export async function predictSingle(features) {
     body: JSON.stringify(features),
   });
 
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.detail || `Erreur de prédiction (${res.status})`);
-  }
-  return data;
+  return await parseResponse(res);
 }
 
 /**
@@ -57,11 +93,7 @@ export async function predictCsv(file) {
     body: formData,
   });
 
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.detail || `Erreur lors de l'analyse du CSV (${res.status})`);
-  }
-  return data;
+  return await parseResponse(res);
 }
 
 /**
@@ -77,8 +109,7 @@ export async function downloadAnnotatedCsv(file) {
   });
 
   if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.detail || `Erreur de téléchargement (${res.status})`);
+    await parseResponse(res); // Déclenchera l'erreur descriptive
   }
 
   const blob = await res.blob();
@@ -91,4 +122,3 @@ export async function downloadAnnotatedCsv(file) {
   link.remove();
   window.URL.revokeObjectURL(downloadUrl);
 }
-
