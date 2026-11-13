@@ -1,7 +1,6 @@
 import { motion } from 'framer-motion';
 import { ArrowRight, FileText } from 'lucide-react';
 import HeroBeam from './HeroBeam';
-import HeroAsciiCanvas from './HeroAsciiCanvas';
 
 export default function HeroSection({ onLaunchConsole }) {
   const scrollTo = (id) => {
@@ -12,15 +11,12 @@ export default function HeroSection({ onLaunchConsole }) {
   return (
     <section
       id="hero"
-      className="relative pt-36 pb-32 sm:pt-48 sm:pb-40 overflow-hidden flex flex-col items-center justify-center text-center min-h-[90vh] bg-black isolate"
+      className="relative pt-36 pb-32 sm:pt-48 sm:pb-40 overflow-hidden flex flex-col items-center justify-center text-center min-h-[90vh] bg-transparent"
     >
       {/* 1. Orgues lumineuses en U d'Aura.build */}
       <HeroBeam />
 
-      {/* 2. Matrice ASCII interactive réagissant au mouvement de la souris */}
-      <HeroAsciiCanvas />
-
-      {/* 3. Contenu de premier plan */}
+      {/* 2. Contenu de premier plan */}
       <div className="relative max-w-4xl mx-auto px-4 sm:px-6 z-10 space-y-7">
         {/* Titre Principal Majestueux (Exactement le style 'Cognition That Scales.') */}
         <motion.h1

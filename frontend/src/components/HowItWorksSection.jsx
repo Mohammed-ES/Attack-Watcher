@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { ShieldCheck, Filter, Cpu, Zap, Check } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ShieldCheck, Filter, Cpu, Zap, Check, ArrowRight, Activity, Database, CheckCircle2 } from 'lucide-react';
 import { ScrollReveal } from '../animations';
 
 export default function HowItWorksSection() {
@@ -17,6 +17,13 @@ export default function HowItWorksSection() {
       badge: 'Zéro bruit',
       detail1: '10 features réseau extraites',
       detail2: 'NaN & inf éliminés',
+      telemetry: {
+        stage: 'Ingestion & Nettoyage',
+        statLabel: 'Taux de conformité',
+        statValue: '100.0%',
+        detail: 'Toutes les lignes brutes normalisées et validées',
+        target: 'CIC-IDS2017 Ingestion Pipeline',
+      },
     },
     {
       id: '02',
@@ -28,6 +35,13 @@ export default function HowItWorksSection() {
       badge: 'Isolation 100%',
       detail1: 'StandardScaler fitté sur Train',
       detail2: 'Aucune fuite vers Test',
+      telemetry: {
+        stage: 'Validation Anti-Fuite',
+        statLabel: 'Isolation Statistique',
+        statValue: '100% Strict',
+        detail: 'StandardScaler ajusté uniquement sur X_train',
+        target: 'Train 80% / Test 20% Stratified',
+      },
     },
     {
       id: '03',
@@ -39,6 +53,13 @@ export default function HowItWorksSection() {
       badge: 'F1-Score 100%',
       detail1: 'RandomForest (Champion)',
       detail2: 'XGBoost (Comparatif)',
+      telemetry: {
+        stage: 'Sélection Modèle Champion',
+        statLabel: 'Score F1 Champion',
+        statValue: '1.000',
+        detail: 'RandomForest sélectionné avec précision parfaite',
+        target: 'Cross-validated vs XGBoost',
+      },
     },
     {
       id: '04',
@@ -50,11 +71,21 @@ export default function HowItWorksSection() {
       badge: '< 0.05ms',
       detail1: 'Routes /predict & /predict-csv',
       detail2: 'Export CSV annoté',
+      telemetry: {
+        stage: 'Moteur d’Inférence Async',
+        statLabel: 'Latence Médiane',
+        statValue: '< 0.05 ms',
+        detail: 'Traitement vectorisé instantané des flux réseau',
+        target: 'FastAPI Async Worker Core',
+      },
     },
   ];
 
+  const activeData = steps[activeStep];
+  const ActiveIcon = activeData.icon;
+
   return (
-    <section id="how-it-works" className="py-24 sm:py-32 bg-black border-t border-[#1a1a1e] relative">
+    <section id="how-it-works" className="py-24 sm:py-32 bg-black/60 border-t border-[#1a1a1e] relative backdrop-blur-sm">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         {/* En-tête centré épuré */}
         <ScrollReveal direction="up">
@@ -68,175 +99,213 @@ export default function HowItWorksSection() {
             </p>
             <div className="pt-2">
               <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#0c0c0e] text-neutral-300 border border-[#222228]">
-                Architecture
+                Architecture Pipeline
               </span>
             </div>
           </div>
         </ScrollReveal>
 
-        {/* Le bloc interactif 4 colonnes + Panneau latéral (Exactement le layout du screenshot) */}
+        {/* Bloc interactif deux côtés avec scroll motion */}
         <ScrollReveal direction="up" delay={0.15}>
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-          {/* Colonnes interactives 01, 02, 03, 04 */}
-          <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-4 gap-3 min-h-[460px]">
-            {steps.map((step, idx) => {
-              const isActive = activeStep === idx;
-              const Icon = step.icon;
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+            {/* Côté Gauche (7 colonnes) : Cartes interactives animées */}
+            <div className="lg:col-span-7 flex flex-col space-y-3">
+              {steps.map((step, idx) => {
+                const isActive = activeStep === idx;
+                const Icon = step.icon;
 
-              return (
-                <div
-                  key={step.id}
-                  onClick={() => setActiveStep(idx)}
-                  className={`cursor-pointer rounded-2xl transition-all duration-300 relative overflow-hidden flex flex-col justify-between ${
-                    isActive
-                      ? 'sm:col-span-4 lg:col-span-4 bg-blue-600 text-white p-7 shadow-2xl shadow-blue-600/30'
-                      : 'hidden sm:flex bg-zinc-950/80 hover:bg-zinc-900/80 border border-zinc-900 hover:border-zinc-800 p-5 text-zinc-400'
-                  }`}
-                >
-                  {/* Vue Active (Carte Bleue Royale étalée) */}
-                  {isActive && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ duration: 0.3 }}
-                      className="space-y-6 flex-1 flex flex-col justify-between"
-                    >
-                      {/* Numéro et titre en haut */}
-                      <div>
-                        <div className="flex items-center justify-between mb-4">
-                          <span className="text-4xl sm:text-5xl font-bold tracking-tighter opacity-90">
-                            {step.id}
-                          </span>
-                          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white/20 backdrop-blur-md text-white border border-white/20">
-                            {step.badge}
-                          </span>
-                        </div>
+                return (
+                  <motion.div
+                    key={step.id}
+                    layout
+                    onClick={() => setActiveStep(idx)}
+                    whileHover={{ y: -2, scale: 1.008 }}
+                    transition={{ duration: 0.3 }}
+                    className={`cursor-pointer rounded-2xl transition-all duration-300 relative overflow-hidden border p-5 sm:p-6 ${
+                      isActive
+                        ? 'bg-gradient-to-r from-blue-600 via-blue-600 to-indigo-600 border-blue-400/50 shadow-2xl shadow-blue-600/30 text-white'
+                        : 'bg-[#0c0c0e]/80 hover:bg-[#121216] border-[#1a1a1e] hover:border-neutral-700 text-neutral-400'
+                    }`}
+                  >
+                    {/* Lueur d'accent active */}
+                    {isActive && (
+                      <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+                    )}
 
-                        <span className="text-xs font-mono tracking-wider uppercase text-blue-200 block mb-1">
-                          {step.subtitle}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3.5">
+                        <span
+                          className={`font-mono text-xl sm:text-2xl font-bold ${
+                            isActive ? 'text-white' : 'text-neutral-500'
+                          }`}
+                        >
+                          {step.id}
                         </span>
-                        <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-                          {step.title}
-                        </h3>
-
-                        <p className="text-blue-100/90 text-xs sm:text-sm mt-3 leading-relaxed max-w-lg font-normal">
-                          {step.desc}
-                        </p>
-                      </div>
-
-                      {/* Aperçu architectural illustré intégré dans la carte bleue */}
-                      <div className="rounded-xl bg-black/30 border border-white/15 p-4 backdrop-blur-md space-y-2 font-mono text-xs">
-                        <div className="flex items-center justify-between text-blue-200 text-[11px] pb-2 border-b border-white/10">
-                          <span className="flex items-center space-x-1.5">
-                            <Icon className="w-3.5 h-3.5" />
-                            <span>{step.tag}</span>
-                          </span>
-                          <span className="text-white font-semibold">Statut: Validé</span>
+                        <div
+                          className={`p-2 rounded-xl ${
+                            isActive
+                              ? 'bg-white/20 text-white'
+                              : 'bg-black border border-[#1a1a1e] text-neutral-400'
+                          }`}
+                        >
+                          <Icon className="w-4 h-4" />
                         </div>
-                        <div className="grid grid-cols-2 gap-2 pt-1 text-[11px]">
-                          <div className="flex items-center space-x-1.5 text-white">
-                            <Check className="w-3 h-3 text-blue-300" />
-                            <span>{step.detail1}</span>
-                          </div>
-                          <div className="flex items-center space-x-1.5 text-white">
-                            <Check className="w-3 h-3 text-blue-300" />
-                            <span>{step.detail2}</span>
-                          </div>
+                        <div>
+                          <span
+                            className={`text-xs font-mono uppercase tracking-wider block ${
+                              isActive ? 'text-blue-100' : 'text-neutral-500'
+                            }`}
+                          >
+                            {step.subtitle}
+                          </span>
+                          <h3
+                            className={`text-base sm:text-lg font-semibold tracking-tight ${
+                              isActive ? 'text-white' : 'text-neutral-200'
+                            }`}
+                          >
+                            {step.title}
+                          </h3>
                         </div>
                       </div>
 
-                      {/* Indicateurs d'étapes en bas */}
-                      <div className="flex items-center justify-between pt-2 border-t border-white/15 text-xs text-blue-200 font-mono">
-                        <div className="flex space-x-2">
-                          {steps.map((_, dotIdx) => (
-                            <button
-                              key={dotIdx}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActiveStep(dotIdx);
-                              }}
-                              className={`h-1.5 rounded-full transition-all ${
-                                dotIdx === activeStep ? 'w-6 bg-white' : 'w-2 bg-white/40'
-                              }`}
-                            />
-                          ))}
+                      <div className="flex items-center space-x-2">
+                        <span
+                          className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${
+                            isActive
+                              ? 'bg-white/20 text-white border-white/30'
+                              : 'bg-black border-[#1a1a1e] text-neutral-400'
+                          }`}
+                        >
+                          {step.badge}
+                        </span>
+                        <div
+                          className={`w-6 h-6 rounded-full flex items-center justify-center transition-transform ${
+                            isActive ? 'rotate-90 text-white' : 'text-neutral-600'
+                          }`}
+                        >
+                          <ArrowRight className="w-3.5 h-3.5" />
                         </div>
-                        <span>Étape {activeStep + 1} sur 4</span>
-                      </div>
-                    </motion.div>
-                  )}
-
-                  {/* Vue Inactive (Colonne sombre verticale avec numéro 02, 03, 04) */}
-                  {!isActive && (
-                    <div className="h-full flex flex-col justify-between">
-                      <span className="text-2xl font-bold font-mono text-zinc-500">
-                        {step.id}
-                      </span>
-                      <div className="pt-20">
-                        <span className="text-xs font-semibold text-zinc-300 block">
-                          {step.title}
-                        </span>
-                        <span className="text-[10px] text-zinc-500 font-mono mt-0.5 block">
-                          {step.subtitle}
-                        </span>
                       </div>
                     </div>
-                  )}
+
+                    {/* Contenu détaillé déplié de la carte active */}
+                    <AnimatePresence>
+                      {isActive && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.35, ease: 'easeOut' }}
+                          className="pt-4 mt-4 border-t border-white/15 space-y-3"
+                        >
+                          <p className="text-blue-50 text-xs sm:text-sm font-light leading-relaxed">
+                            {step.desc}
+                          </p>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 font-mono text-xs">
+                            <div className="flex items-center space-x-2 bg-black/25 rounded-lg px-3 py-2 border border-white/10">
+                              <Check className="w-3.5 h-3.5 text-blue-200 flex-shrink-0" />
+                              <span className="text-white text-[11px]">{step.detail1}</span>
+                            </div>
+                            <div className="flex items-center space-x-2 bg-black/25 rounded-lg px-3 py-2 border border-white/10">
+                              <Check className="w-3.5 h-3.5 text-blue-200 flex-shrink-0" />
+                              <span className="text-white text-[11px]">{step.detail2}</span>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                );
+              })}
+            </div>
+
+            {/* Côté Droit (5 colonnes) : Carte Architecture synchronisée dynamiquement */}
+            <div className="lg:col-span-5 flex flex-col justify-between rounded-3xl bg-[#0c0c0e]/90 border border-[#1a1a1e] p-7 sm:p-8 relative overflow-hidden shadow-2xl backdrop-blur-xl">
+              {/* Lueur d'ambiance bleue réactive */}
+              <div className="absolute top-0 right-0 w-72 h-72 bg-blue-600/15 rounded-full blur-3xl pointer-events-none" />
+
+              <div className="relative z-10 space-y-6">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-mono uppercase tracking-widest text-neutral-500">
+                    Enterprise Grade ML
+                  </span>
+                  <div className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-black border border-[#1a1a1e] text-[11px] font-mono text-emerald-400">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                    <span>SYNCHRONISÉ</span>
+                  </div>
                 </div>
-              );
-            })}
-          </div>
 
-          {/* Sélecteur mobile d'étape */}
-          <div className="sm:hidden flex space-x-2 justify-center py-2">
-            {steps.map((s, idx) => (
-              <button
-                key={s.id}
-                onClick={() => setActiveStep(idx)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-mono ${
-                  activeStep === idx
-                    ? 'bg-blue-600 text-white font-bold'
-                    : 'bg-zinc-900 text-zinc-400'
-                }`}
-              >
-                {s.id}
-              </button>
-            ))}
-          </div>
+                <div className="space-y-3">
+                  <h3 className="text-2xl sm:text-3xl font-bold text-white tracking-tight leading-snug">
+                    Scalable intelligence architecture for modern enterprise
+                  </h3>
+                  <p className="text-neutral-400 text-xs sm:text-sm font-light leading-relaxed">
+                    Notre architecture découple rigoureusement la phase d'apprentissage statistique
+                    de l'exécution d'inférence en production. Les artefacts sérialisés garantissent une
+                    défense pérenne, sans re-calculs superflus.
+                  </p>
+                </div>
 
-          {/* Carte latérale droite : "Scalable intelligence architecture for modern enterprise" */}
-          <div className="lg:col-span-5 bg-zinc-950/80 border border-zinc-900 rounded-2xl p-7 flex flex-col justify-between">
-            <div className="space-y-4">
-              <span className="text-xs font-mono uppercase tracking-widest text-zinc-500">
-                Entreprise Grade ML
-              </span>
-              <h3 className="text-2xl sm:text-3xl font-bold text-white tracking-tight leading-snug">
-                Scalable intelligence architecture for modern enterprise
-              </h3>
-              <p className="text-zinc-400 text-xs sm:text-sm font-light leading-relaxed">
-                Notre architecture découple rigoureusement la phase d'apprentissage statistique
-                de l'exécution d'inférence en production. Les artefacts sérialisés garantissent une
-                défense pérenne, sans re-calculs superflus.
-              </p>
+                {/* Panneau télémétrique réactif selon l'étape sélectionnée */}
+                <motion.div
+                  key={activeStep}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="p-5 rounded-2xl bg-black/80 border border-blue-500/30 space-y-3"
+                >
+                  <div className="flex items-center justify-between border-b border-neutral-800 pb-2.5">
+                    <div className="flex items-center space-x-2 text-blue-400 font-mono text-xs">
+                      <ActiveIcon className="w-4 h-4" />
+                      <span>{activeData.telemetry.stage}</span>
+                    </div>
+                    <span className="text-[10px] font-mono text-neutral-500">
+                      ÉTAPE {activeData.id}/04
+                    </span>
+                  </div>
+
+                  <div className="flex items-baseline justify-between pt-1">
+                    <span className="text-xs text-neutral-400">
+                      {activeData.telemetry.statLabel}
+                    </span>
+                    <span className="text-2xl font-bold font-mono text-white">
+                      {activeData.telemetry.statValue}
+                    </span>
+                  </div>
+
+                  <p className="text-[11px] text-neutral-400 font-mono">
+                    {activeData.telemetry.detail}
+                  </p>
+                </motion.div>
+              </div>
+
+              {/* Matrice de statut fixe en bas */}
+              <div className="relative z-10 mt-6 pt-5 border-t border-[#1a1a1e] space-y-2.5 font-mono text-xs">
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-black border border-[#1a1a1e]">
+                  <span className="text-neutral-400 flex items-center space-x-1.5">
+                    <Database className="w-3.5 h-3.5 text-neutral-500" />
+                    <span>Jeu d'évaluation</span>
+                  </span>
+                  <span className="text-white font-semibold">CIC-IDS2017</span>
+                </div>
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-black border border-[#1a1a1e]">
+                  <span className="text-neutral-400 flex items-center space-x-1.5">
+                    <Activity className="w-3.5 h-3.5 text-blue-400" />
+                    <span>Variables en entrée</span>
+                  </span>
+                  <span className="text-blue-400 font-semibold">10 Features</span>
+                </div>
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-black border border-[#1a1a1e]">
+                  <span className="text-neutral-400 flex items-center space-x-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Modèle Champion</span>
+                  </span>
+                  <span className="text-emerald-400 font-semibold">RandomForest</span>
+                </div>
+              </div>
             </div>
-
-            {/* Matrice de statut dynamique */}
-            <div className="mt-8 pt-6 border-t border-zinc-900 space-y-3 font-mono text-xs">
-              <div className="flex items-center justify-between p-3 rounded-lg bg-black border border-zinc-800">
-                <span className="text-zinc-400">Jeu d'évaluation</span>
-                <span className="text-white font-semibold">CIC-IDS2017 Friday</span>
-              </div>
-              <div className="flex items-center justify-between p-3 rounded-lg bg-black border border-zinc-800">
-                <span className="text-zinc-400">Variables en entrée</span>
-                <span className="text-blue-400 font-semibold">10 Features Standard</span>
-              </div>
-              <div className="flex items-center justify-between p-3 rounded-lg bg-black border border-zinc-800">
-                <span className="text-zinc-400">Modèle Champion</span>
-                <span className="text-emerald-400 font-semibold">RandomForest (100% F1)</span>
-              </div>
-            </div>
           </div>
-        </div>
         </ScrollReveal>
       </div>
     </section>

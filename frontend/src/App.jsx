@@ -7,6 +7,7 @@ import FeaturesGridSection from './components/FeaturesGridSection';
 import ConsoleSection from './components/ConsoleSection';
 import CtaBannerSection from './components/CtaBannerSection';
 import Footer from './components/Footer';
+import GlobalAsciiCanvas from './components/GlobalAsciiCanvas';
 import { getHealth, getFeaturesMetadata } from './services/api';
 
 export default function App() {
@@ -43,29 +44,35 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-black text-neutral-100 selection:bg-blue-600 selection:text-white flex flex-col antialiased relative">
-      {/* Barre de navigation flottante façon pilule */}
+      {/* Barre de navigation flottante façon pilule (apparaît lors de l'accès au Hero) */}
       <Navbar onNavigateToConsole={scrollToConsole} />
 
-      {/* 1. HELLO SECTION : Présente d'abord le logo .GIF officiel avec invitation au scroll */}
+      {/* 1. HELLO SECTION : Présentation plein écran du logo .GIF sans header */}
       <HelloSection onExplore={scrollToHero} />
 
-      {/* 2. HERO SECTION : Style Aura.build épuré "Detection That Scales." avec HeroBeam */}
-      <HeroSection onLaunchConsole={scrollToConsole} />
+      {/* Flux Sombre Continu : Matrice ASCII interactive au curseur du Hero jusqu'au Footer */}
+      <div className="relative bg-black isolate">
+        {/* Fond ASCII interactif global */}
+        <GlobalAsciiCanvas />
 
-      {/* 3. Section "How it works" avec l'accordéon interactif 01, 02, 03, 04 */}
-      <HowItWorksSection />
+        {/* 2. HERO SECTION : Style Aura.build "Detection That Scales." avec orgues lumineuses */}
+        <HeroSection onLaunchConsole={scrollToConsole} />
 
-      {/* 4. Section "Intelligence at every layer" avec la grille de 6 cartes */}
-      <FeaturesGridSection />
+        {/* 3. Section "How it works" : Cartes interactives synchronisées avec scroll motion */}
+        <HowItWorksSection />
 
-      {/* 5. Console Interactive en direct (Saisie Manuelle 10 features & Analyse CSV avec Recharts et pagination) */}
-      <ConsoleSection featuresMetadata={featuresMetadata} />
+        {/* 4. Section "Intelligence at every layer" : Grille 6 cartes modernes avec background et animations */}
+        <FeaturesGridSection />
 
-      {/* 6. Bannière d'appel à l'action bicolore (Noir + Bleu Royal) */}
-      <CtaBannerSection onLaunchConsole={scrollToConsole} />
+        {/* 5. Console Interactive en direct (Saisie Manuelle 10 features & Analyse CSV) */}
+        <ConsoleSection featuresMetadata={featuresMetadata} />
 
-      {/* 7. Pied de page épuré */}
-      <Footer />
+        {/* 6. Bannière d'appel à l'action bicolore */}
+        <CtaBannerSection onLaunchConsole={scrollToConsole} />
+
+        {/* 7. Pied de page épuré */}
+        <Footer />
+      </div>
     </div>
   );
 }
