@@ -290,34 +290,15 @@ export default function HandArtAsciiSection() {
   return (
     <section
       id="ascii-art"
-      className="py-24 sm:py-36 bg-black border-t border-[#1a1a1e] relative overflow-hidden"
+      className="py-16 sm:py-24 bg-black border-t border-[#1a1a1e] relative overflow-hidden"
     >
       {/* Halos d'ambiance bleus et émeraude discrets */}
       <div className="absolute top-1/2 left-1/3 -translate-y-1/2 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[160px] pointer-events-none" />
       <div className="absolute top-1/3 right-1/4 w-[500px] h-[500px] bg-emerald-600/10 rounded-full blur-[150px] pointer-events-none" />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 relative z-10">
-        {/* En-tête élégant aligné avec le design system Aura.build */}
-        <ScrollReveal direction="up">
-          <div className="text-center max-w-2xl mx-auto mb-12 space-y-3">
-            <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-medium bg-[#0c0c0e] text-emerald-400 border border-[#222228]">
-              <Terminal className="w-3.5 h-3.5" />
-              <span>21st.dev // HandArt Canvas2D Engine</span>
-            </div>
-
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white">
-              The Touch of Intelligence
-            </h2>
-
-            <p className="text-neutral-400 text-sm sm:text-base font-normal">
-              Reconstitution fidèle du chef-d'œuvre "HandArt" de 21st.dev. Échantillonnage matriciel en temps réel,
-              micro-lignes raster gravées et décodage vectoriel au curseur.
-            </p>
-          </div>
-        </ScrollReveal>
-
         {/* Barre de commandes et de modes intégrée au style du site */}
-        <ScrollReveal direction="up" delay={0.1}>
+        <ScrollReveal direction="up">
           <div className="flex flex-wrap items-center justify-between gap-4 mb-6 px-2">
             {/* Sélecteur de mode de rendu */}
             <div className="inline-flex items-center p-1 rounded-2xl bg-[#0c0c0e] border border-[#1a1a1e] shadow-xl">

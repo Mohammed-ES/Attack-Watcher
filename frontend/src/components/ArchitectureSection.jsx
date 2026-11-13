@@ -12,7 +12,7 @@ export default function ArchitectureSection() {
     },
     {
       num: '02',
-      title: 'Split Stratifié sans Fuite (Anti-Leakage)',
+      title: 'Split Stratifié sans Fuite',
       desc: 'Découpage 80/20 avec préservation des proportions de classe AVANT tout ajustement du StandardScaler. Garantit la pureté du test.',
       icon: ShieldCheck,
       border: 'border-violet-800/60',

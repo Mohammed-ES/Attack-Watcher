@@ -25,7 +25,6 @@ export default function FeaturesGridSection() {
         <ScrollReveal direction="up">
           <FeaturesWithPanel
             title="Intelligence at every layer"
-            badge="Modular Architecture"
             description="Comprehensive network observability and multi-vector attack detection powered by supervised ML."
             className="py-0"
           />
