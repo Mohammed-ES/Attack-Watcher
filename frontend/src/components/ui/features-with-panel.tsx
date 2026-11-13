@@ -172,7 +172,7 @@ export default function FeaturesWithPanel({
                           : "bg-muted text-muted-foreground",
                       )}
                     >
-                      {String(index + 1).padStart(2, '0')}
+                      {index + 1 < 10 ? `0${index + 1}` : `${index + 1}`}
                     </span>
                     <span
                       className={cn(

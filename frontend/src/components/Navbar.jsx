@@ -86,12 +86,6 @@ export default function Navbar({ onNavigateToConsole }) {
             <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
           </button>
           <button
-            onClick={() => scrollTo('ascii-art')}
-            className="hover:text-white transition"
-          >
-            HandArt ASCII
-          </button>
-          <button
             onClick={() => scrollTo('faq')}
             className="hover:text-white transition"
           >
@@ -152,12 +146,6 @@ export default function Navbar({ onNavigateToConsole }) {
             className="text-left text-sm text-blue-400 font-semibold"
           >
             Console Live (Inférence Directe)
-          </button>
-          <button
-            onClick={() => scrollTo('ascii-art')}
-            className="text-left text-sm text-neutral-300 hover:text-white"
-          >
-            HandArt ASCII Engine
           </button>
           <button
             onClick={() => scrollTo('faq')}

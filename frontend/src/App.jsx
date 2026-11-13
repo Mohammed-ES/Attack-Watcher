@@ -5,7 +5,6 @@ import HeroSection from './components/HeroSection';
 import HowItWorksSection from './components/HowItWorksSection';
 import FeaturesGridSection from './components/FeaturesGridSection';
 import ConsoleSection from './components/ConsoleSection';
-import HandArtAsciiSection from './components/HandArtAsciiSection';
 import FaqSection from './components/FaqSection';
 import Footer from './components/Footer';
 import GlobalAsciiCanvas from './components/GlobalAsciiCanvas';
@@ -68,13 +67,10 @@ export default function App() {
         {/* 5. Console Interactive en direct (Saisie Manuelle 10 features & Analyse CSV) */}
         <ConsoleSection featuresMetadata={featuresMetadata} />
 
-        {/* 6. Section "HandArt" ASCII Raster Engine (21st.dev Canvas2D recipe) */}
-        <HandArtAsciiSection />
-
-        {/* 7. Section "Questions, answered" : Foire aux questions technique interactive */}
+        {/* 6. Section "Questions, answered" : Foire aux questions technique interactive */}
         <FaqSection />
 
-        {/* 8. Pied de page épuré */}
+        {/* 7. Pied de page épuré */}
         <Footer />
       </div>
     </div>

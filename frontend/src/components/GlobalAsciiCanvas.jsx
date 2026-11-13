@@ -82,11 +82,7 @@ export default function GlobalAsciiCanvas() {
 
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
 
-    let tick = 0;
-
     const render = () => {
-      tick++;
-
       // Interpolation douce du curseur
       mouseRef.current.x += (mouseRef.current.targetX - mouseRef.current.x) * 0.18;
       mouseRef.current.y += (mouseRef.current.targetY - mouseRef.current.y) * 0.18;
@@ -150,16 +146,10 @@ export default function GlobalAsciiCanvas() {
               ctx.fillStyle = `rgba(37, 99, 235, ${alpha * 0.85})`;
               ctx.fillText(item.char, posX, posY);
             }
-          } else {
-            // Trame d'ambiance très discrète en arrière-plan
-            const wave = Math.sin(tick * 0.015 + c * 0.12 + r * 0.08) * 0.5 + 0.5;
-            if (wave > 0.92 && (c + r) % 2 === 0) {
-              ctx.fillStyle = `rgba(37, 99, 235, ${0.07 * selectionFactor})`;
-              ctx.fillText(item.char, posX, posY);
-            } else if ((c + r) % 4 === 0) {
-              ctx.fillStyle = `rgba(255, 255, 255, ${0.02 * selectionFactor})`;
-              ctx.fillText(item.baseChar, posX, posY);
-            }
+          } else if ((c + r) % 6 === 0) {
+            // Trame d'ambiance ultra-légère (zéro calcul trigonométrique lourd par cellule)
+            ctx.fillStyle = `rgba(255, 255, 255, ${0.025 * selectionFactor})`;
+            ctx.fillText(item.baseChar, posX, posY);
           }
         }
       }
