@@ -34,16 +34,14 @@ export default function Navbar({ onNavigateToConsole }) {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 flex justify-center px-4 pt-4 transition-all duration-500 ease-out ${
-        visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-12 pointer-events-none'
-      }`}
+      className={`fixed top-0 left-0 right-0 z-50 flex justify-center px-4 pt-4 transition-all duration-500 ease-out ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-12 pointer-events-none'
+        }`}
     >
       <div
-        className={`w-full max-w-6xl rounded-full px-5 py-3 flex items-center justify-between transition-all duration-300 ${
-          scrolled
+        className={`w-full max-w-6xl rounded-full px-5 py-3 flex items-center justify-between transition-all duration-300 ${scrolled
             ? 'bg-black/85 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/90'
             : 'bg-black/50 backdrop-blur-md border border-white/5'
-        }`}
+          }`}
       >
         {/* Logo officiel Attack Watcher */}
         <a
@@ -86,6 +84,12 @@ export default function Navbar({ onNavigateToConsole }) {
           >
             <span>Console Live</span>
             <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
+          </button>
+          <button
+            onClick={() => scrollTo('ascii-art')}
+            className="hover:text-white transition"
+          >
+            HandArt ASCII
           </button>
           <button
             onClick={() => scrollTo('faq')}
@@ -148,6 +152,12 @@ export default function Navbar({ onNavigateToConsole }) {
             className="text-left text-sm text-blue-400 font-semibold"
           >
             Console Live (Inférence Directe)
+          </button>
+          <button
+            onClick={() => scrollTo('ascii-art')}
+            className="text-left text-sm text-neutral-300 hover:text-white"
+          >
+            HandArt ASCII Engine
           </button>
           <button
             onClick={() => scrollTo('faq')}
