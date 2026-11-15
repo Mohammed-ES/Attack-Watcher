@@ -1,8 +1,7 @@
 /**
- * Moteur d'inférence Machine Learning embarqué côté client (Zero Server Dependency).
- * Exécute le modèle Random Forest (100 arbres) et le standard scaler CIC-IDS2017
- * directement en JavaScript dans le navigateur pour une vitesse d'inférence de < 0.1ms
- * et une disponibilité à 100% sur n'importe quel hébergeur statique (Vercel, GitHub Pages, Netlify).
+ * Moteur d'inférence Machine Learning embarqué côté client.
+ * Exécute le modèle Random Forest (100 arbres) et le pipeline de standardisation
+ * directement en JavaScript dans le navigateur pour une disponibilité continue sur hébergeurs statiques.
  */
 
 import modelData from './modelBundle.json';
@@ -10,7 +9,7 @@ import modelData from './modelBundle.json';
 const { features, feature_descriptions, mean, scale, trees } = modelData;
 
 /**
- * Normalise un vecteur de caractéristiques via le StandardScaler (Z-score).
+ * Normalise un vecteur de caractéristiques via le StandardScaler fitté sur le train set.
  */
 function transformFeatures(rawValues) {
   return rawValues.map((val, idx) => {
@@ -38,7 +37,7 @@ function predictTree(nodes, scaledFeatures) {
 }
 
 /**
- * Prédire la probabilité et le label pour un flux unique.
+ * Prédire la probabilité et le label pour un flux unique sur les 9 features.
  */
 export function runLocalSinglePrediction(featureDict) {
   const rawValues = features.map((f) => Number(featureDict[f]) || 0);
@@ -49,7 +48,7 @@ export function runLocalSinglePrediction(featureDict) {
     sumProb += predictTree(trees[i], scaled);
   }
 
-  const probability = sumProb / trees.length;
+  const probability = trees.length > 0 ? sumProb / trees.length : 0;
   const isAttack = probability >= 0.5;
 
   return {
@@ -58,22 +57,46 @@ export function runLocalSinglePrediction(featureDict) {
     label: isAttack ? 1 : 0,
     probability: Math.round(probability * 10000) / 10000,
     confidence: Math.round(Math.max(probability, 1 - probability) * 10000) / 100,
-    model_name: 'RandomForest-Edge (Client Side ML)',
+    model_name: 'RandomForest (Pipeline Client Side)',
     input_features: featureDict,
   };
 }
 
 /**
  * Exécute la classification de masse par lot sur un tableau d'enregistrements CSV
- * avec le schéma exact attendu par les composants React (summary + rows).
+ * avec vérification stricte des colonnes requises et comptage des erreurs.
  */
 export function runLocalBatchPrediction(rows, filename = 'sample_traffic.csv') {
+  if (!rows || rows.length === 0) {
+    throw new Error('Le fichier CSV est vide.');
+  }
+
+  // Vérification de la présence des 9 colonnes obligatoires sur le premier enregistrement
+  const sampleKeys = Object.keys(rows[0] || {});
+  const manquantes = features.filter((f) => !sampleKeys.includes(f));
+  if (manquantes.length > 0) {
+    throw new Error(
+      `Colonnes requises manquantes dans le fichier CSV : ${JSON.stringify(manquantes)}. Colonnes attendues : ${JSON.stringify(features)}`
+    );
+  }
+
   const detailedRows = [];
   let ddosCount = 0;
   let normalCount = 0;
+  let errorCount = 0;
 
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
+
+    // Vérifier si des valeurs numériques sont manquantes ou corrompues
+    for (const f of features) {
+      const v = row[f];
+      if (v === undefined || v === null || v === '' || isNaN(Number(v))) {
+        errorCount++;
+        break;
+      }
+    }
+
     const pred = runLocalSinglePrediction(row);
     if (pred.is_ddos) {
       ddosCount++;
@@ -95,10 +118,15 @@ export function runLocalBatchPrediction(rows, filename = 'sample_traffic.csv') {
 
   return {
     summary: {
+      total_rows: total,
+      error_rows: errorCount,
+      normal_count: normalCount,
+      ddos_count: ddosCount,
+      attack_percentage: attackPercentage,
+      // Rétrocompatibilité
       total_analysed: total,
       total_attacks: ddosCount,
       total_normal: normalCount,
-      attack_percentage: attackPercentage,
     },
     rows: detailedRows,
     filename,

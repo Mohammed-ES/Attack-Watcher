@@ -17,8 +17,8 @@ export default function HowItWorksSection() {
     {
       num: '02',
       label: 'ÉTAPE 02',
-      title: 'Standardisation',
-      desc: 'Normalisation StandardScaler fittée strictement post-split sans fuite de données statistique vers le test.',
+      title: 'Pipeline Étanche',
+      desc: 'Imputation médiane et StandardScaler fittés strictement au sein de la pipeline d\'entraînement sans fuite vers le test.',
       icon: BarChart3,
       yOffset: 'translate-y-8', // Position basse (ondulation)
     },
@@ -26,7 +26,7 @@ export default function HowItWorksSection() {
       num: '03',
       label: 'ÉTAPE 03',
       title: 'Inférence Champion',
-      desc: 'Classification microseconde (< 0.05 ms) par RandomForest optimisé face à XGBoost pour une précision absolue.',
+      desc: 'Classification vectorisée par Random Forest optimisé face à XGBoost avec sélection au F1-Score sur test externe.',
       icon: ShieldCheck,
       yOffset: '-translate-y-2', // Position haute (ondulation)
     },

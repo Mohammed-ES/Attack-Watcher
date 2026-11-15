@@ -1,5 +1,6 @@
 """
 Modèles de validation Pydantic v2 pour l'API Attack Watcher.
+Définit les schémas stricts pour l'inférence unitaire, l'analyse par lot CSV et les métadonnées.
 """
 
 from typing import Any
@@ -9,8 +10,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class SinglePredictionRequest(BaseModel):
     """
-    Saisie manuelle des 10 features réseau requises pour l'inférence.
-    Supporte à la fois les clés snake_case et les noms de colonnes officiels CIC-IDS2017.
+    Saisie manuelle des 9 features réseau requises pour l'inférence (sans Destination Port).
+    Supporte les alias avec espaces du format CIC-IDS2017 ainsi que snake_case.
     """
     model_config = ConfigDict(
         validate_by_name=True,
@@ -18,7 +19,6 @@ class SinglePredictionRequest(BaseModel):
         populate_by_name=True,
     )
 
-    destination_port: float = Field(..., alias="Destination Port", ge=0, le=65535, description="Port cible (ex: 80, 443)")
     flow_duration: float = Field(..., alias="Flow Duration", ge=0, description="Durée totale en microsecondes")
     total_fwd_packets: float = Field(..., alias="Total Fwd Packets", ge=0, description="Nombre total de paquets aller")
     total_backward_packets: float = Field(..., alias="Total Backward Packets", ge=0, description="Nombre total de paquets retour")
@@ -32,7 +32,6 @@ class SinglePredictionRequest(BaseModel):
     def to_features_dict(self) -> dict[str, float]:
         """Convertit l'objet en dictionnaire avec les noms de colonnes exacts pour le modèle."""
         return {
-            "Destination Port": float(self.destination_port),
             "Flow Duration": float(self.flow_duration),
             "Total Fwd Packets": float(self.total_fwd_packets),
             "Total Backward Packets": float(self.total_backward_packets),
@@ -49,7 +48,7 @@ class SinglePredictionResponse(BaseModel):
     """Réponse d'une prédiction unitaire."""
     prediction: str = Field(..., description="'Normal' ou 'Attaque DDoS'")
     is_ddos: bool = Field(..., description="True si classé en attaque DDoS")
-    probability: float = Field(..., ge=0.0, le=1.0, description="Probabilité de la classe DDoS")
+    probability: float | None = Field(None, ge=0.0, le=1.0, description="Probabilité de la classe DDoS")
     confidence: float = Field(..., ge=0.0, le=100.0, description="Niveau de certitude en pourcentage")
     model_name: str = Field(..., description="Nom de l'algorithme ayant produit le résultat")
     input_features: dict[str, float]
@@ -60,16 +59,22 @@ class CsvRowPrediction(BaseModel):
     row_index: int
     prediction: str
     is_ddos: bool
-    probability: float
+    probability: float | None = None
     features: dict[str, Any]
 
 
 class CsvSummary(BaseModel):
     """Statistiques globales après traitement d'un fichier CSV."""
+    total_rows: int
+    error_rows: int
+    normal_count: int
+    ddos_count: int
+    attack_percentage: float
+
+    # Alias pour compatibilité ascendante avec les composants existants
     total_analysed: int
     total_attacks: int
     total_normal: int
-    attack_percentage: float
 
 
 class CsvPredictionResponse(BaseModel):
@@ -77,6 +82,18 @@ class CsvPredictionResponse(BaseModel):
     summary: CsvSummary
     rows: list[CsvRowPrediction]
     filename: str
+
+
+class ModelInfoResponse(BaseModel):
+    """Informations complètes et métriques réelles sur le modèle en production."""
+    version: str
+    datasets: list[str]
+    training_date: str
+    features: list[str]
+    champion_model: str
+    validation_strategy: str | None = None
+    metrics: dict[str, Any]
+    benchmark: dict[str, Any] | None = None
 
 
 class FeaturesMetadataResponse(BaseModel):

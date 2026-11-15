@@ -22,7 +22,7 @@ export default function ConsoleSection({ featuresMetadata }) {
               Live Detection Console
             </h2>
             <p className="text-neutral-400 text-sm sm:text-base font-normal">
-              Testez directement le modèle champion sur 10 métriques réseau ou téléversez vos fichiers CSV.
+              Testez directement le modèle champion sur 9 métriques réseau (sans Destination Port) ou téléversez vos fichiers CSV.
             </p>
 
             {/* Commutateur en pilule moderne (Aura Style) */}
@@ -37,7 +37,7 @@ export default function ConsoleSection({ featuresMetadata }) {
                   }`}
                 >
                   <Sliders className="w-3.5 h-3.5" />
-                  <span>Saisie Manuelle (10 Features)</span>
+                  <span>Saisie Manuelle (9 Features)</span>
                 </button>
 
                 <button

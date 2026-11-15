@@ -1,7 +1,7 @@
 """
 Service d'inférence Machine Learning pour Attack Watcher.
-Charge les artefacts (modèle champion, scaler, métadonnées des features)
-et gère les prédictions unitaires et par lot.
+Charge les artefacts unifiés (pipeline étanche avec imputer + scaler + classifieur, métadonnées réelles)
+et gère les prédictions unitaires et par lot sans aucune simulation de données.
 """
 
 from __future__ import annotations
@@ -32,83 +32,117 @@ class AttackPredictor:
     def __init__(
         self,
         model_path: Path = settings.MODEL_PATH,
-        scaler_path: Path = settings.SCALER_PATH,
         features_path: Path = settings.FEATURES_PATH,
     ) -> None:
         self.model_path = model_path
-        self.scaler_path = scaler_path
         self.features_path = features_path
 
-        self.model: Any = None
-        self.scaler: Any = None
-        self.features_metadata: dict[str, Any] = {}
+        self.pipeline: Any = None
         self.feature_names: list[str] = []
+        self.feature_descriptions: dict[str, str] = {}
+        self.version: str = "1.1.0"
+        self.datasets: list[str] = []
+        self.training_date: str = ""
+        self.metrics: dict[str, Any] = {}
+        self.benchmark: dict[str, Any] = {}
+        self.nom_modele: str = "RandomForest"
+        self.validation_strategy: str = ""
 
         self.charger_artefacts()
 
     def charger_artefacts(self) -> None:
-        """Charge le modèle, le scaler et les métadonnées depuis le disque."""
+        """Charge le bundle d'artefacts ML depuis le disque."""
         if not self.model_path.exists():
             raise ModelLoadError(f"Fichier modèle introuvable : {self.model_path}")
-        if not self.scaler_path.exists():
-            raise ModelLoadError(f"Fichier scaler introuvable : {self.scaler_path}")
-        if not self.features_path.exists():
-            raise ModelLoadError(f"Fichier features introuvable : {self.features_path}")
 
         try:
-            self.model = joblib.load(self.model_path)
-            self.scaler = joblib.load(self.scaler_path)
-            with open(self.features_path, "r", encoding="utf-8") as f:
-                self.features_metadata = json.load(f)
-            self.feature_names = self.features_metadata.get("features", [])
+            bundle = joblib.load(self.model_path)
+            if isinstance(bundle, dict) and "model" in bundle:
+                self.pipeline = bundle["model"]
+                self.feature_names = bundle.get("features", [])
+                self.feature_descriptions = bundle.get("feature_descriptions", {})
+                self.version = bundle.get("version", "1.1.0")
+                self.datasets = bundle.get("datasets", [])
+                self.training_date = bundle.get("training_date", "")
+                self.metrics = bundle.get("metrics", {})
+                self.benchmark = bundle.get("benchmark", {})
+                self.nom_modele = bundle.get("champion_model", type(self.pipeline).__name__)
+                self.validation_strategy = bundle.get("validation_strategy", "")
+            else:
+                # Modèle brut
+                self.pipeline = bundle
+                if self.features_path.exists():
+                    with open(self.features_path, "r", encoding="utf-8") as f:
+                        meta = json.load(f)
+                    self.feature_names = meta.get("features", [])
+                    self.feature_descriptions = meta.get("feature_descriptions", {})
+                    self.version = meta.get("version", "1.1.0")
+                    self.datasets = meta.get("datasets", [])
+                    self.training_date = meta.get("training_date", "")
+                    self.metrics = meta.get("metrics", {})
+                    self.benchmark = meta.get("benchmark", {})
+                    self.nom_modele = meta.get("champion_model", type(self.pipeline).__name__)
+                    self.validation_strategy = meta.get("validation_strategy", "")
+
         except Exception as e:
             raise ModelLoadError(f"Erreur lors du chargement des artefacts ML : {e}") from e
 
     @property
     def est_pret(self) -> bool:
         """Vérifie si tous les composants sont opérationnels."""
-        return self.model is not None and self.scaler is not None and len(self.feature_names) > 0
+        return self.pipeline is not None and len(self.feature_names) > 0
 
     @property
-    def nom_modele(self) -> str:
-        """Retourne le nom du modèle champion."""
-        return self.features_metadata.get("champion_model", type(self.model).__name__)
+    def features_metadata(self) -> dict[str, Any]:
+        """Retourne les métadonnées descriptives pour l'API."""
+        return {
+            "features": self.feature_names,
+            "feature_descriptions": self.feature_descriptions,
+            "target": "Label",
+            "label_mapping": {
+                "0": "Normal",
+                "1": "Attaque DDoS",
+            },
+            "champion_model": self.nom_modele,
+            "benchmark": self.benchmark,
+        }
 
     def predire_unitaire(self, features_dict: dict[str, float]) -> dict[str, Any]:
         """
-        Effectue une prédiction sur un ensemble de 10 features réseau.
+        Effectue une prédiction unitaire sur les 9 features réseau requises.
         """
         if not self.est_pret:
             raise ModelLoadError("Le moteur d'inférence n'est pas initialisé.")
 
-        # Vérification de l'exhaustivité des features
+        # Vérification stricte de la complétude des colonnes
         manquantes = [f for f in self.feature_names if f not in features_dict]
         if manquantes:
             raise FeatureValidationError(f"Features manquantes pour l'inférence : {manquantes}")
 
-        # Construction du DataFrame avec ordre strict des colonnes
+        # DataFrame aligné avec l'ordre strict des features
         ligne_df = pd.DataFrame([{col: features_dict[col] for col in self.feature_names}])
+        ligne_df = ligne_df.replace([np.inf, -np.inf], np.nan)
 
-        # Remplacement de valeurs aberrantes
-        ligne_df = ligne_df.replace([np.inf, -np.inf], 0.0).fillna(0.0)
+        # Inférence via la pipeline (SimpleImputer + StandardScaler + Classifieur)
+        prediction_val = int(self.pipeline.predict(ligne_df)[0])
 
-        # Normalisation
-        scaled_features = self.scaler.transform(ligne_df)
+        proba_ddos: float | None = None
+        confidence: float = 100.0
 
-        # Inférence
-        prediction_val = int(self.model.predict(scaled_features)[0])
-        probabilites = self.model.predict_proba(scaled_features)[0]
+        if hasattr(self.pipeline, "predict_proba"):
+            probabilites = self.pipeline.predict_proba(ligne_df)[0]
+            proba_ddos = float(probabilites[1])
+            is_ddos = prediction_val == 1
+            confidence = proba_ddos * 100.0 if is_ddos else (1.0 - proba_ddos) * 100.0
+        else:
+            is_ddos = prediction_val == 1
 
-        # Classe 1 = DDoS, Classe 0 = BENIGN (Normal)
-        proba_ddos = float(probabilites[1])
-        is_ddos = prediction_val == 1
         label = "Attaque DDoS" if is_ddos else "Normal"
-        confidence = proba_ddos * 100.0 if is_ddos else (1.0 - proba_ddos) * 100.0
 
         return {
             "prediction": label,
             "is_ddos": is_ddos,
-            "probability": round(proba_ddos, 4),
+            "probability": round(proba_ddos, 4) if proba_ddos is not None else None,
             "confidence": round(confidence, 2),
             "model_name": self.nom_modele,
             "input_features": {k: float(features_dict[k]) for k in self.feature_names},
@@ -116,75 +150,88 @@ class AttackPredictor:
 
     def predire_csv(self, contenu_bytes: bytes, nom_fichier: str) -> tuple[dict[str, Any], list[dict[str, Any]], str]:
         """
-        Traite un fichier CSV téléversé, applique les prédictions par lot
-        et génère un résumé statistique ainsi qu'un export CSV enrichi.
+        Traite un fichier CSV de trafic réseau, valide les colonnes,
+        applique les prédictions réelles par lot et génère les statistiques ainsi qu'un export enrichi.
         """
         if not self.est_pret:
             raise ModelLoadError("Le moteur d'inférence n'est pas initialisé.")
 
         try:
-            df = pd.read_csv(io.BytesIO(contenu_bytes))
+            df = pd.read_csv(io.BytesIO(contenu_bytes), low_memory=False)
         except Exception as e:
             raise FeatureValidationError(f"Impossible de lire le fichier CSV : {e}") from e
 
         if df.empty:
             raise FeatureValidationError("Le fichier CSV fourni est vide.")
 
-        # Nettoyage des espaces des noms de colonnes
+        # Nettoyage des espaces blancs dans les noms de colonnes
         df.columns = df.columns.str.strip()
 
-        # Vérification de la présence des features nécessaires
+        # Validation stricte des colonnes requises
         manquantes = [col for col in self.feature_names if col not in df.columns]
         if manquantes:
             raise FeatureValidationError(
-                f"Le fichier CSV ne contient pas toutes les colonnes requises. "
-                f"Colonnes manquantes : {manquantes}"
+                f"Colonnes requises manquantes dans le fichier CSV : {manquantes}. "
+                f"Colonnes attendues : {self.feature_names}"
             )
 
-        # Extraction des features dans l'ordre requis
+        total_rows = len(df)
         X = df[self.feature_names].copy()
 
-        # Nettoyage des inf / NaN sur les données d'entrée
-        X = X.replace([np.inf, -np.inf], np.nan)
-        X = X.fillna(0.0)
+        # Conversion numérique et détection des lignes en erreur
+        lignes_en_erreur = 0
+        for col in self.feature_names:
+            col_numerique = pd.to_numeric(X[col], errors="coerce")
+            lignes_en_erreur += int(col_numerique.isna().sum())
+            X[col] = col_numerique
 
-        # Normalisation par lot
-        X_scaled = self.scaler.transform(X)
+        # Remplacement des inf / -inf par NaN pour prise en charge automatique par le SimpleImputer
+        X = X.replace([np.inf, -np.inf], np.nan)
 
         # Prédictions vectorisées
-        predictions = self.model.predict(X_scaled)
-        probabilites = self.model.predict_proba(X_scaled)
-        probas_ddos = probabilites[:, 1]
+        predictions = self.pipeline.predict(X)
 
-        total_analysed = len(df)
-        total_attacks = int(np.sum(predictions == 1))
-        total_normal = total_analysed - total_attacks
-        attack_percentage = round((total_attacks / total_analysed) * 100.0, 2) if total_analysed > 0 else 0.0
+        has_proba = hasattr(self.pipeline, "predict_proba")
+        if has_proba:
+            probabilites = self.pipeline.predict_proba(X)
+            probas_ddos = probabilites[:, 1]
+        else:
+            probas_ddos = None
+
+        ddos_count = int(np.sum(predictions == 1))
+        normal_count = total_rows - ddos_count
+        attack_percentage = round((ddos_count / total_rows) * 100.0, 2) if total_rows > 0 else 0.0
 
         summary = {
-            "total_analysed": total_analysed,
-            "total_attacks": total_attacks,
-            "total_normal": total_normal,
+            "total_rows": total_rows,
+            "error_rows": lignes_en_erreur,
+            "normal_count": normal_count,
+            "ddos_count": ddos_count,
             "attack_percentage": attack_percentage,
+            # Rétrocompatibilité
+            "total_analysed": total_rows,
+            "total_attacks": ddos_count,
+            "total_normal": normal_count,
         }
 
-        # Construction des lignes de résultats
+        # Construction des enregistrements pour l'affichage
         rows_result: list[dict[str, Any]] = []
-        for idx in range(total_analysed):
+        for idx in range(total_rows):
             is_ddos = bool(predictions[idx] == 1)
-            proba = float(probas_ddos[idx])
+            proba = float(probas_ddos[idx]) if probas_ddos is not None else None
             rows_result.append({
                 "row_index": idx + 1,
                 "prediction": "Attaque DDoS" if is_ddos else "Normal",
                 "is_ddos": is_ddos,
-                "probability": round(proba, 4),
+                "probability": round(proba, 4) if proba is not None else None,
                 "features": {col: (float(df.iloc[idx][col]) if pd.notnull(df.iloc[idx][col]) else 0.0) for col in self.feature_names},
             })
 
-        # Enrichissement du DataFrame original pour l'export téléchargeable
+        # Enrichissement du DataFrame original pour l'export
         df_export = df.copy()
         df_export["Attack_Watcher_Prediction"] = np.where(predictions == 1, "Attaque DDoS", "Normal")
-        df_export["DDoS_Probability"] = np.round(probas_ddos, 4)
+        if probas_ddos is not None:
+            df_export["DDoS_Probability"] = np.round(probas_ddos, 4)
 
         csv_buffer = io.StringIO()
         df_export.to_csv(csv_buffer, index=False)
@@ -193,7 +240,6 @@ class AttackPredictor:
         return summary, rows_result, csv_export_str
 
 
-# Instance globale du service d'inférence
 try:
     predictor = AttackPredictor()
 except (ModelLoadError, FileNotFoundError, OSError):

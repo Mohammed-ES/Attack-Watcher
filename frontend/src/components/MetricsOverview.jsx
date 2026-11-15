@@ -3,39 +3,43 @@ import { FileSpreadsheet, CheckCircle2, AlertTriangle, Activity } from 'lucide-r
 export default function MetricsOverview({ summary }) {
   if (!summary) return null;
 
-  const { total_analysed, total_attacks, total_normal, attack_percentage } = summary;
+  const totalRows = summary.total_rows ?? summary.total_analysed ?? 0;
+  const errorRows = summary.error_rows ?? 0;
+  const normalCount = summary.normal_count ?? summary.total_normal ?? 0;
+  const ddosCount = summary.ddos_count ?? summary.total_attacks ?? 0;
+  const attackPercentage = summary.attack_percentage ?? (totalRows > 0 ? (ddosCount / totalRows) * 100 : 0);
 
   const cards = [
     {
       title: 'Flux Analysés',
-      value: total_analysed.toLocaleString(),
-      subtitle: 'Lignes réseau traitées',
+      value: totalRows.toLocaleString(),
+      subtitle: `${errorRows} ligne(s) avec valeurs manquantes/invalides`,
       icon: FileSpreadsheet,
       iconColor: 'text-[#2563eb]',
       borderColor: 'border-[#1a1a1e] hover:border-[#2563eb]/40',
     },
     {
       title: 'Trafic Normal',
-      value: total_normal.toLocaleString(),
-      subtitle: `${((total_normal / (total_analysed || 1)) * 100).toFixed(1)}% du total`,
+      value: normalCount.toLocaleString(),
+      subtitle: `${((normalCount / (totalRows || 1)) * 100).toFixed(1)}% du total vérifié`,
       icon: CheckCircle2,
       iconColor: 'text-emerald-400',
       borderColor: 'border-[#1a1a1e] hover:border-emerald-500/40',
     },
     {
-      title: 'Attaques Détectées',
-      value: total_attacks.toLocaleString(),
-      subtitle: 'Flux malveillants identifiés',
+      title: 'Attaques DDoS',
+      value: ddosCount.toLocaleString(),
+      subtitle: `${((ddosCount / (totalRows || 1)) * 100).toFixed(1)}% classé malveillant`,
       icon: AlertTriangle,
       iconColor: 'text-rose-400',
       borderColor: 'border-[#1a1a1e] hover:border-rose-500/40',
     },
     {
       title: "Taux d'Attaque",
-      value: `${attack_percentage.toFixed(1)}%`,
-      subtitle: 'Gravité du flux global',
+      value: `${attackPercentage.toFixed(1)}%`,
+      subtitle: attackPercentage > 20 ? 'Intensité d’attaque élevée' : 'Activité normale à modérée',
       icon: Activity,
-      iconColor: attack_percentage > 20 ? 'text-rose-400' : 'text-amber-400',
+      iconColor: attackPercentage > 20 ? 'text-rose-400' : 'text-amber-400',
       borderColor: 'border-[#1a1a1e] hover:border-[#2563eb]/40',
     },
   ];

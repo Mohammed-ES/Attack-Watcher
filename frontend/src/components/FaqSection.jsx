@@ -10,27 +10,27 @@ export default function FaqSection() {
     {
       question: "Comment l'architecture élimine-t-elle tout risque de fuite de données (Data Leakage) ?",
       answer:
-        "La partition des données (StratifiedShuffleSplit 80% entraînement / 20% test) est appliquée strictement avant toute étape de mise à l'échelle. L'objet StandardScaler est fitté exclusivement sur le sous-ensemble d'apprentissage (X_train) puis sérialisé, garantissant que les données de test ne contaminent jamais les paramètres de normalisation.",
+        "La partition des données (StratifiedShuffleSplit 80% entraînement / 20% test ou Leave-One-Dataset-Out) est appliquée strictement avant toute étape de mise à l'échelle. L'imputation médiane (SimpleImputer) et la normalisation (StandardScaler) sont encapsulées dans une Pipeline scikit-learn fittée exclusivement sur X_train, garantissant l'étanchéité totale du jeu de test.",
     },
     {
       question: 'Pourquoi le modèle Random Forest a-t-il été retenu comme champion face à XGBoost ?',
       answer:
-        "Lors de notre banc d'essai comparatif sur le sous-ensemble standard CIC-IDS2017, RandomForest a atteint un score F1 optimal de 1.000 avec une matrice de confusion sans faux positifs sur les flux DDoS. De plus, il offre un temps d'exécution unitaire inférieur (< 0.05 ms par vecteur) et une empreinte mémoire compacte en production.",
+        "Lors de notre banc d'essai comparatif sur 41 931 flux réels held-out, RandomForest a atteint un score F1 optimal de 0.9996 (Précision 99.99%, Rappel 99.93%) avec une stabilité remarquable et une empreinte mémoire compacte.",
     },
     {
-      question: "Quelles sont les 10 caractéristiques réseau extraites pour l'inférence ?",
+      question: "Quelles sont les 9 caractéristiques réseau extraites pour l'inférence ?",
       answer:
-        "Le vecteur d'entrée capture la signature dynamique des flux TCP/IP : Destination Port, Flow Duration, Total Fwd/Bwd Packets, Total Length of Fwd/Bwd Packets, Fwd Packet Length Max/Mean, et Flow IAT Mean/Std. Ces variables permettent d'identifier instantanément les anomalies de débit et les inondations.",
+        "Le vecteur d'entrée capture la signature dynamique des flux TCP/IP : Flow Duration, Total Fwd/Bwd Packets, Total Length of Fwd/Bwd Packets, Bwd Packet Length Std, Flow Packets/s, Flow IAT Mean et ACK Flag Count. La variable Destination Port a été volontairement retirée pour limiter la dépendance au contexte de capture.",
     },
     {
       question: "Comment le traitement vectorisé de fichiers CSV massifs s'effectue-t-il sans saturation mémoire ?",
       answer:
-        "Le point d'accès /predict-csv utilise un streaming vectorisé avec Pandas et NumPy. Les 10 colonnes requises sont filtrées, assainies (nettoyage des NaN et valeurs infinies) et transformées par lot directement en tenseurs NumPy, permettant de classifier plusieurs centaines de milliers de lignes en quelques secondes sans saturer la RAM.",
+        "Le point d'accès /predict-csv applique un streaming vectorisé avec Pandas et NumPy. Les 9 colonnes requises sont validées (rejet 400 clair si une colonne manque), les valeurs non numériques sont isolées, et la taille de fichier est bornée à 50 Mo (statut 413 si dépassée).",
     },
     {
-      question: "Quelle est la latence d'inférence garantie en environnement de production ?",
+      question: "Quelle est la performance d'inférence en environnement de production ?",
       answer:
-        "L'exposition via FastAPI et Pydantic v2 garantit une validation de schéma à haute cadence. Le temps de réponse médian pour une requête unitaire sur /predict est inférieur à 0.05 milliseconde, rendant l'outil apte à une intégration directe sur des sondes réseau en coupure ou en écoute passive.",
+        "L'exposition via FastAPI et Pydantic v2 garantit une validation de schéma ultra-rapide. L'inférence vectorisée par lot traite des dizaines de milliers de lignes en quelques secondes, permettant une intégration fluide sur sondes réseau ou chaînes d'analyse SOC.",
     },
     {
       question: 'Comment exporter les résultats annotés vers les plateformes SIEM / SOC ?',

@@ -1,234 +1,184 @@
----
-title: Attack Watcher API
-emoji: 🛡️
-colorFrom: blue
-colorTo: indigo
-sdk: gradio
-sdk_version: 5.20.0
-app_file: app.py
-pinned: false
----
+# Attack Watcher
 
-<div align="center">
+Plateforme d'analyse et de détection d'attaques DDoS par Machine Learning en temps réel.
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="attack-watcher-logo-dark.png">
-  <source media="(prefers-color-scheme: light)" srcset="attack-watcher-logo-light.png">
-  <img alt="Attack Watcher Logo" src="attack-watcher-logo-dark.png" width="280" />
-</picture>
-
-### Plateforme d'analyse et de détection d'attaques DDoS par Machine Learning en temps réel
-
-[![CI - Attack Watcher](https://github.com/Mohammed-ES/Attack-Watcher/actions/workflows/ci.yml/badge.svg)](https://github.com/Mohammed-ES/Attack-Watcher/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/Python-3.13%20%7C%203.15-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![React](https://img.shields.io/badge/React-19-61DAFB.svg?logo=react&logoColor=black)](https://react.dev/)
 [![Vite](https://img.shields.io/badge/Vite-8-646CFF.svg?logo=vite&logoColor=white)](https://vite.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC.svg?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-[![Vercel Ready](https://img.shields.io/badge/Deploy-Vercel-black.svg?logo=vercel&logoColor=white)](https://vercel.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-
-</div>
 
 ---
 
 ## Sommaire
 
 - [Présentation](#présentation)
+- [Pipeline Machine Learning Réel](#pipeline-machine-learning-réel)
 - [Fonctionnalités Principales](#fonctionnalités-principales)
 - [Architecture & Technologies](#architecture--technologies)
-- [Jeu de Données et Benchmark (CIC-IDS2017)](#jeu-de-données-et-benchmark-cic-ids2017)
+- [Limites & Périmètre](#limites--périmètre)
 - [Installation et Démarrage Rapide](#installation-et-démarrage-rapide)
-- [Déploiement sur Vercel](#déploiement-sur-vercel)
 - [Tests et Qualité de Code](#tests-et-qualité-de-code)
-- [Intégration Continue (CI)](#intégration-continue-ci)
 - [Licence](#licence)
 
 ---
 
 ## Présentation
 
-**Attack Watcher** est une application web conçue pour les équipes de cybersécurité (SOC / CERT), les administrateurs d'infrastructure et les ingénieurs réseau. Elle permet d'inspecter et de classifier les flux de trafic TCP/IP afin de détecter avec certitude les attaques par déni de service distribué (DDoS).
+Attack Watcher est un système d'analyse et de classification du trafic réseau IP/TCP conçu pour détecter les attaques par déni de service distribué (DDoS). 
 
-Le système s'appuie sur des modèles d'apprentissage automatique supervisé entraînés sur des caractéristiques réseau discriminantes, offrant à la fois une interface d'inférence unitaire pour des tests ciblés et un moteur d'analyse par lot pour le traitement de fichiers de capture au format CSV.
+Le projet couple un pipeline d'apprentissage automatique supervisé (Random Forest et XGBoost), une API REST sous FastAPI et une interface réactive sous React 19 et Vite 8.
 
-Pour une description exhaustive des choix techniques, consultez le document [ARCHITECTURE.md](ARCHITECTURE.md).
+---
+
+## Pipeline Machine Learning Réel
+
+### 1. Ingestion et Harmonisation Multi-Datasets
+Le pipeline supporte l'ingestion des jeux de données de référence :
+- **CIC-IDS2017** (Friday DDoS)
+- **CSE-CIC-IDS2018**
+- **CIC-DDoS2019**
+
+Les schémas de colonnes hétérogènes sont normalisés vers une nomenclature commune. Les étiquettes de classes sont strictement mappées :
+- `BENIGN` / `Normal` : classe 0
+- Toutes variantes d'attaques DDoS (`DDoS`, `DDoS-LOIC-HTTP`, `DDoS-Syn`, etc.) : classe 1
+- Les attaques hors-périmètre DDoS (Bot, Brute Force, Web Attack) sont exclues de l'apprentissage binaire.
+
+### 2. Sélection des 9 Caractéristiques (Sans Destination Port)
+Pour limiter le surapprentissage lié aux ports d'écoute spécifiques de capture (ex: port 80 ou 443), la variable `Destination Port` a été retirée. Le modèle opère exclusivement sur 9 métriques de dynamique de flux :
+1. `Flow Duration` : Durée totale du flux en microsecondes
+2. `Total Fwd Packets` : Nombre total de paquets émis (aller)
+3. `Total Backward Packets` : Nombre total de paquets reçus (retour)
+4. `Total Length of Fwd Packets` : Volume total cumulé émis (octets)
+5. `Total Length of Bwd Packets` : Volume total cumulé reçu (octets)
+6. `Bwd Packet Length Std` : Écart-type de la taille des paquets retour
+7. `Flow Packets/s` : Débit du flux en paquets par seconde
+8. `Flow IAT Mean` : Temps moyen inter-paquets
+9. `ACK Flag Count` : Présence du drapeau TCP ACK (0 ou 1)
+
+### 3. Nettoyage et Pipeline sans Fuite (Zero Leakage)
+- Suppression des espaces dans les noms de colonnes (`strip()`).
+- Élimination des doublons.
+- Conversion des valeurs infinies (`+inf`, `-inf`) en `NaN`.
+- Encapsulation au sein d'une `Pipeline` scikit-learn :
+  - `SimpleImputer(strategy='median')`
+  - `StandardScaler()`
+  - Classifieur (`RandomForestClassifier` ou `XGBClassifier`)
+- L'imputation et la normalisation sont ajustées (`fit`) strictement sur le sous-ensemble d'apprentissage (`X_train`), interdisant toute fuite statistique vers le test.
+
+### 4. Validation et Métriques Réelles
+- Stratégie : Leave-One-Dataset-Out (LODO) en présence de plusieurs datasets, ou partition held-out externe (80% train / 20% test).
+- Échantillons nettoyés : 209 653 enregistrements réels (Train : 167 722 flux, Test : 41 931 flux).
+- Résultats réels sur le jeu de test externe :
+  - **Random Forest (Modèle Champion)** :
+    - Précision : 99.99% (0.9999)
+    - Rappel : 99.93% (0.9993)
+    - F1-Score : 99.96% (0.9996)
+    - ROC-AUC : 1.0000
+    - Matrice de confusion : TN = 16 433, FP = 2, FN = 18, TP = 25 478
+  - **XGBoost** :
+    - Précision : 99.99% (0.9999)
+    - Rappel : 99.93% (0.9993)
+    - F1-Score : 99.96% (0.9996)
+    - ROC-AUC : 1.0000
+    - Matrice de confusion : TN = 16 433, FP = 2, FN = 18, TP = 25 478
+
+Les artefacts sont exportés dans `ml/artifacts/model.joblib` sous la forme d'un dictionnaire unifié contenant le pipeline, les métadonnées, la date d'entraînement et les scores réels.
 
 ---
 
 ## Fonctionnalités Principales
 
-- **Inférence Unitaire Ultra-Rapide (< 0.05 ms)** : Formulaire interactif permettant de renseigner les 10 caractéristiques d'un flux réseau et d'obtenir immédiatement le verdict ("Normal" ou "Attaque DDoS"), la probabilité calculée et l'analyse contextuelle.
-- **Présélections de Flux Prêtes à l'Emploi** : Chargement instantané en un clic de profils de test représentatifs (trafic web HTTP légitime ou attaque DDoS par inondation massive).
-- **Analyse par Lot (Fichiers CSV)** : Téléversement et streaming vectorisé de captures volumineuses sans saturation mémoire ni latence.
-- **Tableau de Bord & Visualisations Télémétriques** : Graphiques vectoriels interactifs détaillant la proportion des flux et la répartition par paliers de probabilité de risque.
-- **Exploration Paginée & Tri Dynamique** : Filtrage par statut de menace, recherche textuelle par port et tri multicritères.
-- **Export Enrichi SIEM** : Téléchargement du fichier CSV d'origine complété des colonnes `Attack_Watcher_Prediction` et `DDoS_Probability` pour intégration immédiate dans Splunk, Elastic ou Graylog.
+- **Inférence Unitaire** : Formulaire pour les 9 features avec restitution du verdict, du degré de certitude et de la probabilité DDoS.
+- **Analyse par Lot (Fichiers CSV)** :
+  - Contrôle strict des 9 colonnes obligatoires (rejet HTTP 400 explicite en cas d'absence).
+  - Plafond de taille fixé à 50 Mo (rejet HTTP 413 si dépassé).
+  - Synthèse statistique : total de lignes, lignes en erreur, comptages Normal et DDoS, taux d'attaque.
+- **Historique Local** : Tableau conservant les 10 dernières analyses de lots de la session.
+- **Transparence Télémétrique** : Point d'accès `/api/model-info` exposant la version du modèle, les datasets sources, la date et les métriques réelles sans données simulées.
+- **Export Enrichi** : Téléchargement du CSV traité avec colonnes `Attack_Watcher_Prediction` et `DDoS_Probability`.
 
 ---
 
 ## Architecture & Technologies
 
-Le projet s'articule autour de trois modules indépendants et rigoureusement typés :
-
 ```text
 Attack-Watcher/
-├── ml/                      # Pipeline Machine Learning et artefacts
-│   ├── train.py             # Script complet (nettoyage, split stratifié, benchmark, export)
-│   ├── generate_sample_csv.py # Générateur de jeux d'échantillons de test
-│   ├── requirements.txt     # Dépendances ML
-│   └── artifacts/           # Modèle champion (.joblib), scaler (.joblib), métadonnées (.json)
-├── backend/                 # API REST FastAPI
+├── ml/
+│   ├── train.py                # Pipeline d'entraînement réel (imputer + scaler + classifieurs)
+│   ├── generate_sample_csv.py  # Extraction d'échantillons réels depuis le dataset
+│   └── artifacts/              # model.joblib unifié et features.json
+├── backend/
 │   ├── app/
-│   │   ├── main.py          # Point d'entrée, gestion du cycle de vie et routes
-│   │   ├── config.py        # Configuration centralisée et politique CORS
-│   │   ├── schemas.py       # Validation Pydantic v2
-│   │   └── predictor.py     # Service d'inférence thread-safe
-│   ├── tests/               # Suite de tests Pytest (/predict, /predict-csv, validation 422)
-│   └── requirements.txt     # Dépendances backend
-├── frontend/                # Application Web React 19 + Vite 8
-│   ├── src/
-│   │   ├── components/      # Composants d'interface modulaires (Hero, Console, FAQ, etc.)
-│   │   ├── services/        # Couche API résiliente (api.js avec support Vercel)
-│   │   ├── App.jsx          # Assemblage principal de l'application
-│   │   └── main.jsx         # Point d'entrée React
-│   ├── vercel.json          # Configuration des routes SPA pour Vercel
-│   ├── .env.example         # Gabarit de configuration des variables d'environnement
-│   ├── vite.config.js       # Configuration Vite avec proxy /api et alias @
-│   ├── tailwind.config.js   # Configuration de style (Aura theme)
-│   └── package.json         # Dépendances frontend
-├── vercel.json              # Configuration racine pour le déploiement Vercel
-├── .env.example             # Gabarit racine des variables d'environnement
-├── ARCHITECTURE.md          # Documentation technique détaillée
-├── LICENSE                  # Licence logicielle MIT
-├── pytest.ini               # Configuration des tests Python
-└── README.md
+│   │   ├── main.py             # Routes FastAPI, validation 400/413/422, endpoint /api/model-info
+│   │   ├── config.py           # Configuration absolue et limite 50 Mo
+│   │   ├── schemas.py          # Modèles Pydantic v2 (9 features, CsvSummary, ModelInfoResponse)
+│   │   └── predictor.py        # Moteur d'inférence vectorisé sans simulation
+│   └── tests/
+│       └── test_api.py         # Tests Pytest (9 tests unitaires et d'intégration)
+└── frontend/
+    └── src/
+        ├── components/         # Composants UI (Console, CSV, Saisie, Historique 10, Benchmark)
+        └── services/           # api.js et moteur client edgeML.js
 ```
-
-### Stack Technique
-
-| Domaine | Outils et Bibliothèques |
-| :--- | :--- |
-| **Machine Learning** | Python 3.13 / 3.15, Scikit-Learn 1.9.1, XGBoost 3.4.1, Pandas, NumPy, Joblib |
-| **Backend API** | FastAPI, Uvicorn, Pydantic v2, Python-Multipart |
-| **Qualité & Tests Backend** | Pytest, HTTPX, Ruff |
-| **Frontend** | React 19, Vite 8, Framer Motion, Recharts, Tailwind CSS, Lucide Icons |
-| **Qualité Frontend** | ESLint 9 |
-| **Hébergement & Déploiement** | Vercel (Frontend), Render / Railway / Docker (Backend) |
-| **CI / CD** | GitHub Actions |
 
 ---
 
-## Jeu de Données et Benchmark (CIC-IDS2017)
+## Limites & Périmètre
 
-Le modèle a été conçu et calibré à partir du jeu de données de référence international **CIC-IDS2017**, produit par le **Canadian Institute for Cybersecurity (CIC)** de l'Université du Nouveau-Brunswick (UNB).
-
-- **Fichier de référence** : `Friday-WorkingHours-Afternoon-DDos.pcap_ISCX.csv`
-- **Source officielle du dataset** : [UNB Canadian Institute for Cybersecurity - IDS 2017](https://www.unb.ca/cic/datasets/ids-2017.html)
-- **Publication scientifique** :
-  > Iman Sharafaldin, Arash Habibi Lashkari, and Ali A. Ghorbani, *"Toward Generating a New Dataset for Security Analysis: Towards Developing Newer Intrusion Detection Datasets"*, Proceedings of the International Conference on Information Systems Security and Privacy (ICISSP), 2018.
+1. **Généralisation Inter-Datasets** : Bien que la validation Leave-One-Dataset-Out permette d'évaluer la robustesse face à des topologies réseau différentes, des variations substantielles dans l'architecture de capture, le bruit de fond ou les protocoles applicatifs peuvent induire un décalage de distribution (domain shift).
+2. **Périmètre des Attaques Couvertes** : Le modèle est entraîné pour détecter les attaques par inondation volumétrique et épuisement de ressources (ex: SYN Flood, UDP Flood, HTTP GET/POST Flood). Il n'est pas conçu pour identifier les attaques applicatives ciblées sans volume anormal (ex: injections SQL, XSS) ni les attaques lentes non volumétriques (ex: Slowloris) sans suivi d'état étendu dans le temps.
+3. **Retrait du Port de Destination** : Ce choix renforce l'indépendance du modèle vis-à-vis des ports standards (80, 443), mais transfère l'effort discriminatoire exclusivement sur les ratios de paquets, les durées et les intervalles d'arrivée.
 
 ---
 
 ## Installation et Démarrage Rapide
 
-### 1. Cloner le Projet
+### Prérequis
+- Python 3.13 ou 3.15
+- Node.js 18+ et npm
+
+### 1. Backend FastAPI
 ```bash
-git clone https://github.com/Mohammed-ES/Attack-Watcher.git
-cd Attack-Watcher
+# Activation de l'environnement virtuel
+.\.venv\Scripts\activate
+
+# Démarrage de l'API
+uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-### 2. Environnement Python et Entraînement ML
-```bash
-# Création et activation de l'environnement virtuel
-python -m venv .venv
+L'API sera disponible sur `http://localhost:8000`. La documentation OpenAPI interactive est accessible sur `http://localhost:8000/docs`.
 
-# Sur Windows :
-.venv\Scripts\activate
-# Sur Linux/macOS :
-source .venv/bin/activate
-
-# Installation des dépendances ML
-pip install -r ml/requirements.txt
-
-# Entraînement et benchmark (utilise le fichier dans data/ ou génère des données calibrées)
-python ml/train.py
-
-# Générer un fichier CSV d'échantillons de test
-python ml/generate_sample_csv.py --out data/sample_traffic.csv --rows 100
-```
-
-### 3. Démarrer l'API Backend (FastAPI)
-```bash
-pip install -r backend/requirements.txt
-uvicorn backend.app.main:app --reload --port 8000
-```
-- API accessible sur : `http://localhost:8000`
-- Documentation interactive OpenAPI / Swagger : `http://localhost:8000/docs`
-
-### 4. Démarrer l'Interface Frontend (React + Vite)
-Dans un second terminal :
+### 2. Frontend React 19 + Vite
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-- Interface utilisateur accessible sur : `http://localhost:5173`
 
----
-
-## Déploiement sur Vercel
-
-Le projet est préconfiguré pour un déploiement instantané sur **Vercel**.
-
-### Configuration Frontend sur Vercel
-
-1. Importez votre dépôt GitHub `Attack-Watcher` sur [Vercel](https://vercel.com).
-2. Configurez le projet :
-   - **Framework Preset** : `Vite`
-   - **Root Directory** : `./` (ou `frontend` si vous déployez le sous-dossier uniquement)
-   - **Build Command** : `cd frontend && npm install && npm run build` (ou `npm run build` si Root Directory est `frontend`)
-   - **Output Directory** : `frontend/dist` (ou `dist`)
-3. **Variables d'environnement (Environment Variables)** dans les paramètres Vercel :
-   - Ajoutez la variable suivante :
-     ```text
-     VITE_API_BASE_URL = https://votre-backend-fastapi.onrender.com/api
-     ```
-     *(Remplacez par l'URL publique où votre API FastAPI est hébergée sur Render, Railway, Fly.io ou votre serveur).*
-
-Le fichier `vercel.json` inclus prend en charge automatiquement le routage SPA pour éviter toute erreur 404 lors des rafraîchissements de page.
+L'application web sera accessible sur `http://localhost:5173`.
 
 ---
 
 ## Tests et Qualité de Code
 
 ```bash
-# Tests unitaires et d'intégration backend (Pytest)
-pytest backend/tests -v
+# Exécution de la suite de tests Pytest (9 tests)
+.\.venv\Scripts\pytest
 
-# Analyse statique et linting du backend (Ruff)
-ruff check backend
+# Vérification du typage et linting Python (Ruff)
+.\.venv\Scripts\ruff check backend ml
 
-# Linting du frontend (ESLint)
-cd frontend
-npm run lint
+# Vérification du linting Frontend (ESLint)
+npm --prefix frontend run lint
 
-# Validation de la compilation de production (Vite)
+# Build de production Frontend
 npm run build
 ```
 
 ---
 
-## Intégration Continue (CI)
-
-Le fichier `.github/workflows/ci.yml` exécute les vérifications automatisées à chaque `push` et `pull_request` :
-- **Backend** : Contrôle de syntaxe Ruff et exécution de l'ensemble des 9 tests Pytest sur Python 3.13 avec mise en cache des dépendances `pip`.
-- **Frontend** : Installation `npm ci`, validation ESLint (0 erreur, 0 avertissement) et compilation de production Vite sur Node.js LTS avec mise en cache `npm`.
-
----
-
 ## Licence
 
-Ce projet est sous licence **MIT**. Consultez le fichier [LICENSE](LICENSE) pour obtenir l'intégralité des termes et conditions d'utilisation.
-
-Copyright (c) 2026 Mohammed-ES.
+Ce projet est distribué sous licence MIT. Consultez le fichier [LICENSE](LICENSE) pour plus de détails.

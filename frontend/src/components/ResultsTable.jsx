@@ -15,12 +15,11 @@ export default function ResultsTable({ rows }) {
       if (filterStatus === 'ATTACK' && !r.is_ddos) return false;
       if (filterStatus === 'NORMAL' && r.is_ddos) return false;
 
-      // Recherche par index ou port de destination
+      // Recherche par index
       if (searchTerm.trim() !== '') {
         const term = searchTerm.trim().toLowerCase();
         const rowIdx = String(r.row_index);
-        const port = String(r.features?.['Destination Port'] || '');
-        return rowIdx.includes(term) || port.includes(term);
+        return rowIdx.includes(term);
       }
       return true;
     });
@@ -88,7 +87,7 @@ export default function ResultsTable({ rows }) {
             <Search className="w-4 h-4 absolute left-3 top-2.5 text-neutral-500" />
             <input
               type="text"
-              placeholder="Rechercher (ligne, port)..."
+              placeholder="Rechercher (ligne #)..."
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
@@ -118,10 +117,10 @@ export default function ResultsTable({ rows }) {
               <th className="py-3 px-4"># Ligne</th>
               <th className="py-3 px-4">Verdict</th>
               <th className="py-3 px-4">Probabilité DDoS</th>
-              <th className="py-3 px-4">Port Dest.</th>
               <th className="py-3 px-4">Durée Flux (µs)</th>
               <th className="py-3 px-4">Total Fwd Pkts</th>
               <th className="py-3 px-4">Total Bwd Pkts</th>
+              <th className="py-3 px-4">Flow Pkts/s</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#1a1a1e]">
@@ -134,7 +133,8 @@ export default function ResultsTable({ rows }) {
             ) : (
               paginatedRows.map((r) => {
                 const isAttack = r.is_ddos;
-                const proba = (r.probability * 100).toFixed(1);
+                const hasProba = r.probability != null && r.probability !== undefined;
+                const proba = hasProba ? (r.probability * 100).toFixed(1) : null;
                 const feats = r.features || {};
 
                 return (
@@ -159,20 +159,21 @@ export default function ResultsTable({ rows }) {
                       )}
                     </td>
                     <td className="py-3 px-4">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-16 bg-neutral-900 rounded-full h-1.5 overflow-hidden">
-                          <div
-                            className={`h-full rounded-full ${
-                              isAttack ? 'bg-rose-500' : 'bg-emerald-500'
-                            }`}
-                            style={{ width: `${proba}%` }}
-                          />
+                      {hasProba ? (
+                        <div className="flex items-center space-x-2">
+                          <div className="w-16 bg-neutral-900 rounded-full h-1.5 overflow-hidden">
+                            <div
+                              className={`h-full rounded-full ${
+                                isAttack ? 'bg-rose-500' : 'bg-emerald-500'
+                              }`}
+                              style={{ width: `${proba}%` }}
+                            />
+                          </div>
+                          <span className="font-mono text-neutral-300">{proba}%</span>
                         </div>
-                        <span className="font-mono text-neutral-300">{proba}%</span>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 font-mono text-neutral-300">
-                      {feats['Destination Port'] ?? '-'}
+                      ) : (
+                        <span className="text-neutral-500 font-mono">-</span>
+                      )}
                     </td>
                     <td className="py-3 px-4 font-mono text-neutral-400">
                       {feats['Flow Duration'] != null
@@ -184,6 +185,9 @@ export default function ResultsTable({ rows }) {
                     </td>
                     <td className="py-3 px-4 font-mono text-neutral-400">
                       {feats['Total Backward Packets'] ?? '-'}
+                    </td>
+                    <td className="py-3 px-4 font-mono text-neutral-400">
+                      {feats['Flow Packets/s'] != null ? Number(feats['Flow Packets/s']).toFixed(2) : '-'}
                     </td>
                   </tr>
                 );

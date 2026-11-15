@@ -1,27 +1,46 @@
 """
 Attack Watcher - Pipeline d'entraînement et de benchmark Machine Learning
-Détection d'attaques DDoS sur le jeu de données CIC-IDS2017.
+Détection d'attaques DDoS sur les jeux de données CIC-IDS2017, CSE-CIC-IDS2018 et CIC-DDoS2019.
+Supporte la validation Leave-One-Dataset-Out (LODO) et l'évaluation sur jeu de test externe held-out.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Any
 
 import joblib
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import classification_report, confusion_matrix, f1_score, precision_score, recall_score, roc_auc_score
+from sklearn.impute import SimpleImputer
+from sklearn.metrics import (
+    confusion_matrix,
+    f1_score,
+    precision_score,
+    recall_score,
+    roc_auc_score,
+)
 from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from xgboost import XGBClassifier
 
-# Liste des 10 features réseau les plus discriminantes pour le trafic DDoS
-SELECTED_FEATURES: List[str] = [
-    "Destination Port",
+# Chemins absolus de base
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Configuration par défaut des datasets supportés
+DATASET_CONFIG: dict[str, Path] = {
+    "CIC-IDS2017": BASE_DIR / "dataset" / "Friday-WorkingHours-Afternoon-DDos.pcap_ISCX.csv",
+    "CSE-CIC-IDS2018": BASE_DIR / "dataset" / "CSE-CIC-IDS2018.csv",
+    "CIC-DDoS2019": BASE_DIR / "dataset" / "CIC-DDoS2019.csv",
+}
+
+# 9 features sélectionnées sans Destination Port (pour limiter la dépendance à la capture réseau)
+SELECTED_FEATURES: list[str] = [
     "Flow Duration",
     "Total Fwd Packets",
     "Total Backward Packets",
@@ -33,8 +52,7 @@ SELECTED_FEATURES: List[str] = [
     "ACK Flag Count",
 ]
 
-FEATURE_DESCRIPTIONS: Dict[str, str] = {
-    "Destination Port": "Port de destination du flux réseau (ex: 80, 443)",
+FEATURE_DESCRIPTIONS: dict[str, str] = {
     "Flow Duration": "Durée totale du flux réseau (en microsecondes)",
     "Total Fwd Packets": "Nombre total de paquets émis dans le sens aller",
     "Total Backward Packets": "Nombre total de paquets reçus en retour",
@@ -46,198 +64,257 @@ FEATURE_DESCRIPTIONS: Dict[str, str] = {
     "ACK Flag Count": "Nombre de paquets avec le drapeau TCP ACK activé",
 }
 
+# Table de correspondance exhaustive des noms de colonnes hétérogènes entre datasets
+COLUMN_MAPPING: dict[str, str] = {
+    # Variantes CSE-CIC-IDS2018
+    "Tot Fwd Pkts": "Total Fwd Packets",
+    "Tot Bwd Pkts": "Total Backward Packets",
+    "TotLen Fwd Pkts": "Total Length of Fwd Packets",
+    "TotLen Bwd Pkts": "Total Length of Bwd Packets",
+    "Bwd Pkt Len Std": "Bwd Packet Length Std",
+    "Flow Pkts/s": "Flow Packets/s",
+    "Flow IAT Mean": "Flow IAT Mean",
+    "ACK Flag Cnt": "ACK Flag Count",
+    # Variantes CIC-DDoS2019 / CIC-IDS2017
+    "Flow Duration": "Flow Duration",
+    "Total Fwd Packets": "Total Fwd Packets",
+    "Total Backward Packets": "Total Backward Packets",
+    "Total Length of Fwd Packets": "Total Length of Fwd Packets",
+    "Total Length of Bwd Packets": "Total Length of Bwd Packets",
+    "Bwd Packet Length Std": "Bwd Packet Length Std",
+    "Flow Packets/s": "Flow Packets/s",
+    "ACK Flag Count": "ACK Flag Count",
+    "Label": "Label",
+}
 
-def generer_donnees_synthetiques(n_echantillons: int = 15000) -> pd.DataFrame:
+
+def harmoniser_label(val: Any) -> int | None:
     """
-    Génère un jeu de données synthétique calibré sur les distributions
-    de trafic réel et d'attaques DDoS du dataset CIC-IDS2017.
+    Mappe de manière stricte les libellés réseau :
+    - BENIGN / Normal -> 0
+    - Toute variante d'attaque DDoS (ex: DDoS, DDOS, DDoS-LOIC-HTTP, etc.) -> 1
+    - Autres attaques non-DDoS -> None (exclues de la classification binaire)
     """
-    print(f"[*] Génération d'un dataset synthétique de démonstration ({n_echantillons} lignes)...")
-    np.random.seed(42)
-    n_benign = int(n_echantillons * 0.55)
-    n_ddos = n_echantillons - n_benign
+    if val is None or pd.isna(val):
+        return None
+    val_str = str(val).strip()
+    val_lower = val_str.lower()
 
-    # Profil trafic normal (BENIGN) : ports variés (80, 443, 8080, ports hauts), durées modérées,
-    # ratio fwd/bwd équilibré, débit modéré.
-    benign_data = {
-        "Destination Port": np.random.choice([80, 443, 8080, 53, 22, 3389], size=n_benign, p=[0.4, 0.4, 0.05, 0.05, 0.05, 0.05]),
-        "Flow Duration": np.random.exponential(scale=3000000, size=n_benign) + 1000,
-        "Total Fwd Packets": np.random.negative_binomial(5, 0.3, size=n_benign) + 1,
-        "Total Backward Packets": np.random.negative_binomial(6, 0.35, size=n_benign) + 1,
-        "Total Length of Fwd Packets": np.random.gamma(2, 400, size=n_benign) + 40,
-        "Total Length of Bwd Packets": np.random.gamma(3, 800, size=n_benign) + 40,
-        "Bwd Packet Length Std": np.random.exponential(scale=150, size=n_benign),
-        "Flow Packets/s": np.random.exponential(scale=50, size=n_benign) + 0.1,
-        "Flow IAT Mean": np.random.exponential(scale=200000, size=n_benign) + 10,
-        "ACK Flag Count": np.random.binomial(1, 0.75, size=n_benign),
-        "Label": ["BENIGN"] * n_benign,
-    }
-
-    # Profil attaque DDoS : inondation ciblée (souvent port 80), durées très courtes ou asymétriques,
-    # énorme débit de paquets, quasi aucun paquet de retour (bwd quasi nul), paquets répétitifs.
-    ddos_data = {
-        "Destination Port": np.random.choice([80, 8080], size=n_ddos, p=[0.9, 0.1]),
-        "Flow Duration": np.random.exponential(scale=500000, size=n_ddos) + 500,
-        "Total Fwd Packets": np.random.negative_binomial(15, 0.2, size=n_ddos) + 10,
-        "Total Backward Packets": np.random.poisson(lam=0.4, size=n_ddos),  # Quasi aucune réponse
-        "Total Length of Fwd Packets": np.random.gamma(4, 300, size=n_ddos) + 200,
-        "Total Length of Bwd Packets": np.random.choice([0, 40, 80], size=n_ddos, p=[0.8, 0.15, 0.05]),
-        "Bwd Packet Length Std": np.random.choice([0.0, 10.0], size=n_ddos, p=[0.85, 0.15]),
-        "Flow Packets/s": np.random.exponential(scale=1200, size=n_ddos) + 500,  # Débit massif
-        "Flow IAT Mean": np.random.exponential(scale=2000, size=n_ddos) + 1,      # Fréquence ultra rapide
-        "ACK Flag Count": np.random.binomial(1, 0.15, size=n_ddos),
-        "Label": ["DDoS"] * n_ddos,
-    }
-
-    df_benign = pd.DataFrame(benign_data)
-    df_ddos = pd.DataFrame(ddos_data)
-    df = pd.concat([df_benign, df_ddos], ignore_index=True)
-    # Mélange aléatoire
-    return df.sample(frac=1.0, random_state=42).reset_index(drop=True)
+    if val_lower in ("benign", "normal"):
+        return 0
+    if "ddos" in val_lower:
+        return 1
+    return None
 
 
-def charger_et_nettoyer_donnees(chemin_csv: Path, mode_demo: bool = False, max_lignes: int | None = None) -> Tuple[pd.DataFrame, pd.Series]:
+def charger_et_nettoyer_dataset(chemin: Path, nom_dataset: str, max_lignes: int | None = None) -> pd.DataFrame:
     """
-    Charge le dataset CIC-IDS2017 (ou génère les données de démo si absent),
-    nettoie les colonnes, supprime les inf/NaN et doublons, et encode le Label.
+    Charge un dataset CSV, harmonise les colonnes, filtre les labels et nettoie les valeurs aberrantes.
     """
-    if mode_demo or not chemin_csv.exists():
-        if not mode_demo:
-            print(f"[!] Fichier introuvable à l'emplacement : {chemin_csv}")
-            print("[*] Bascule automatique vers le mode démonstration synthétique.")
-        df = generer_donnees_synthetiques()
-    else:
-        print(f"[*] Chargement du dataset depuis {chemin_csv}...")
-        df = pd.read_csv(chemin_csv, nrows=max_lignes)
+    if not chemin.exists():
+        raise FileNotFoundError(f"Fichier introuvable pour {nom_dataset} à l'emplacement : {chemin}")
+
+    print(f"[*] Chargement du dataset {nom_dataset} depuis {chemin}...")
+    df = pd.read_csv(chemin, nrows=max_lignes, low_memory=False)
 
     # 1. Suppression des espaces blancs dans les noms de colonnes
     df.columns = df.columns.str.strip()
-    print(f"[*] Colonnes présentes : {len(df.columns)} colonnes.")
 
-    # Vérification des colonnes cibles
-    col_label = "Label" if "Label" in df.columns else None
-    if not col_label:
-        raise ValueError("La colonne 'Label' est introuvable dans le dataset.")
+    # 2. Renommage des colonnes selon la table d'harmonisation
+    df = df.rename(columns=COLUMN_MAPPING)
 
-    # Conserver uniquement les 10 features sélectionnées + Label
-    colonnes_a_garder = [col for col in SELECTED_FEATURES if col in df.columns]
-    if len(colonnes_a_garder) < len(SELECTED_FEATURES):
-        manquantes = set(SELECTED_FEATURES) - set(colonnes_a_garder)
-        raise ValueError(f"Colonnes requises manquantes dans le dataset : {manquantes}")
+    # Vérification de la présence de la colonne Label
+    if "Label" not in df.columns:
+        raise ValueError(f"La colonne 'Label' est introuvable dans {nom_dataset}.")
 
-    df = df[SELECTED_FEATURES + [col_label]].copy()
-    print(f"[*] Lignes initiales : {len(df)}")
+    # Vérification de la présence des 9 features requises
+    manquantes = [f for f in SELECTED_FEATURES if f not in df.columns]
+    if manquantes:
+        raise ValueError(f"Features obligatoires manquantes dans {nom_dataset} : {manquantes}")
 
-    # 2. Gestion des valeurs infinies et manquantes
-    # Remplacer inf et -inf par NaN, puis supprimer les NaN sans utiliser inplace=True (déprécié dans Pandas 3+)
-    df = df.replace([np.inf, -np.inf], np.nan)
-    lignes_avant_na = len(df)
-    df = df.dropna()
-    na_supprimees = lignes_avant_na - len(df)
-    if na_supprimees > 0:
-        print(f"[*] {na_supprimees} lignes avec NaN ou inf supprimées.")
+    # Conservation stricte des 9 features + Label
+    df = df[SELECTED_FEATURES + ["Label"]].copy()
 
-    # 3. Suppression des doublons (sans inplace=True)
-    lignes_avant_doublons = len(df)
+    # 3. Suppression des doublons
+    nb_avant_doublons = len(df)
     df = df.drop_duplicates()
-    doublons_supprimes = lignes_avant_doublons - len(df)
-    if doublons_supprimes > 0:
-        print(f"[*] {doublons_supprimes} doublons supprimés.")
+    nb_doublons = nb_avant_doublons - len(df)
+    if nb_doublons > 0:
+        print(f"    - {nb_doublons} doublons supprimés.")
 
-    # 4. Encodage binaire de la cible (BENIGN = 0, DDoS = 1)
-    # Nettoyage d'éventuels espaces dans le label
-    df[col_label] = df[col_label].astype(str).str.strip()
-    
-    # Prise en charge des variantes d'étiquettes (ex: DDoS, Infiltration, etc.)
-    # Dans CIC-IDS2017 Friday DDoS, les étiquettes sont généralement "BENIGN" et "DDoS"
-    label_binaire = df[col_label].apply(lambda x: 0 if x.upper() == "BENIGN" else 1)
-    
-    repartition = label_binaire.value_counts(normalize=True).to_dict()
-    print(f"[*] Répartition des classes : 0 (BENIGN): {repartition.get(0, 0):.2%}, 1 (DDoS): {repartition.get(1, 0):.2%}")
-    print(f"[*] Total final d'échantillons propres : {len(df)}")
+    # 4. Remplacement de inf et -inf par NaN sur les colonnes numériques
+    for col in SELECTED_FEATURES:
+        df[col] = pd.to_numeric(df[col], errors="coerce")
+    df[SELECTED_FEATURES] = df[SELECTED_FEATURES].replace([np.inf, -np.inf], np.nan)
 
-    X = df[SELECTED_FEATURES].copy()
-    y = label_binaire
+    # 5. Harmonisation des labels et exclusion des attaques hors-périmètre DDoS
+    df["Label_Binaire"] = df["Label"].apply(harmoniser_label)
+    nb_avant_filtre = len(df)
+    df = df[df["Label_Binaire"].notna()].copy()
+    nb_exclus = nb_avant_filtre - len(df)
+    if nb_exclus > 0:
+        print(f"    - {nb_exclus} lignes hors périmètre DDoS exclues.")
 
-    return X, y
+    df["Label"] = df["Label_Binaire"].astype(int)
+    df = df.drop(columns=["Label_Binaire"])
+
+    # Étiqueter le dataset d'origine pour la traçabilité LODO
+    df["Dataset_Source"] = nom_dataset
+
+    print(f"    - {len(df)} enregistrements valides conservés pour {nom_dataset}.")
+    return df
+
+
+def exporter_model_bundle_json(champion_pipeline: Pipeline, chemin_sortie: Path) -> None:
+    """
+    Exporte les poids de l'arbre Random Forest et les paramètres du scaler
+    au format JSON pour le moteur Edge ML côté client.
+    """
+    scaler = champion_pipeline.named_steps.get("scaler")
+    clf = champion_pipeline.named_steps.get("classifier")
+
+    mean_vals = scaler.mean_.tolist() if hasattr(scaler, "mean_") else [0.0] * len(SELECTED_FEATURES)
+    scale_vals = scaler.scale_.tolist() if hasattr(scaler, "scale_") else [1.0] * len(SELECTED_FEATURES)
+
+    trees_json: list[list[dict[str, Any]]] = []
+    if isinstance(clf, RandomForestClassifier):
+        # Exporter les 100 arbres de décision
+        for est in clf.estimators_:
+            tree_nodes: list[dict[str, Any]] = []
+            tree = est.tree_
+            for node_id in range(tree.node_count):
+                left_child = int(tree.children_left[node_id])
+                right_child = int(tree.children_right[node_id])
+                feat_idx = int(tree.feature[node_id])
+                thresh = float(tree.threshold[node_id])
+                val_counts = tree.value[node_id][0]
+                tot = float(np.sum(val_counts))
+                prob = float(val_counts[1] / tot) if tot > 0 else 0.0
+
+                tree_nodes.append({
+                    "left": left_child,
+                    "right": right_child,
+                    "feat": feat_idx,
+                    "thresh": thresh,
+                    "prob": prob,
+                })
+            trees_json.append(tree_nodes)
+
+    bundle = {
+        "features": SELECTED_FEATURES,
+        "feature_descriptions": FEATURE_DESCRIPTIONS,
+        "mean": mean_vals,
+        "scale": scale_vals,
+        "trees": trees_json,
+    }
+
+    chemin_sortie.parent.mkdir(parents=True, exist_ok=True)
+    with open(chemin_sortie, "w", encoding="utf-8") as f:
+        json.dump(bundle, f, ensure_ascii=False)
+    print(f"[✔] Bundle Edge ML exporté vers {chemin_sortie}")
 
 
 def entrainer_et_evaluer(
-    X: pd.DataFrame,
-    y: pd.Series,
-    dossier_artefacts: Path
-) -> Tuple[object, StandardScaler, Dict]:
+    datasets_dict: dict[str, pd.DataFrame],
+    test_dataset_name: str | None,
+    dossier_artefacts: Path,
+) -> dict[str, Any]:
     """
-    Exécute le split stratifié AVANT le scaling, entraîne Random Forest et XGBoost,
-    affiche le benchmark comparatif et sauvegarde le champion.
+    Entraîne les modèles via pipeline étanche (imputation médiane + standardisation sans fuite),
+    évalue Random Forest et XGBoost sur le jeu de test externe et sauvegarde le champion.
     """
-    print("\n" + "=" * 60)
-    print(" 1. SPLIT STRATIFIÉ (80% Train, 20% Test) & SCALING SANS FUITE")
-    print("=" * 60)
+    dossier_artefacts.mkdir(parents=True, exist_ok=True)
 
-    # 1. Split stratifié appliqué strictement AVANT tout scaling pour éviter la fuite de données
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.20, random_state=42, stratify=y
-    )
+    noms_dispos = list(datasets_dict.keys())
+    print("\n" + "=" * 65)
+    print(f" PIPELINE D'ENTRAÎNEMENT & VALIDATION : {len(noms_dispos)} DATASETS CHARGÉS")
+    print("=" * 65)
 
-    print(f"[*] Dimensions Train : {X_train.shape[0]} lignes")
-    print(f"[*] Dimensions Test  : {X_test.shape[0]} lignes")
+    if len(noms_dispos) > 1 and test_dataset_name and test_dataset_name in datasets_dict:
+        # Mode Leave-One-Dataset-Out (LODO)
+        print("[*] Stratégie de validation : Leave-One-Dataset-Out (LODO)")
+        print(f"[*] Dataset de test externe non vu : {test_dataset_name}")
+        train_dfs = [df for name, df in datasets_dict.items() if name != test_dataset_name]
+        df_train = pd.concat(train_dfs, ignore_index=True)
+        df_test = datasets_dict[test_dataset_name].copy()
+        validation_strategy = f"Leave-One-Dataset-Out (Test sur {test_dataset_name})"
+    else:
+        # Mode jeu unique ou partition held-out externe
+        print("[*] Stratégie de validation : Split Stratifié Externe (Held-Out Test Set 20%)")
+        nom_unique = noms_dispos[0]
+        df_total = datasets_dict[nom_unique]
+        df_train, df_test = train_test_split(
+            df_total, test_size=0.20, random_state=42, stratify=df_total["Label"]
+        )
+        test_dataset_name = f"{nom_unique} (Held-out Test 20%)"
+        validation_strategy = "Stratified Held-Out Test Split (20%)"
 
-    # 2. Scaling fitté UNIQUEMENT sur le Train set
-    scaler = StandardScaler()
-    X_train_scaled = scaler.fit_transform(X_train)
-    X_test_scaled = scaler.transform(X_test)
+    X_train = df_train[SELECTED_FEATURES]
+    y_train = df_train["Label"]
+    X_test = df_test[SELECTED_FEATURES]
+    y_test = df_test["Label"]
 
-    # 3. Modèles à benchmarker
-    modeles = {
-        "RandomForest": RandomForestClassifier(
-            n_estimators=100,
-            max_depth=12,
-            min_samples_split=5,
-            random_state=42,
-            n_jobs=-1,
-        ),
-        "XGBoost": XGBClassifier(
-            n_estimators=100,
-            max_depth=6,
-            learning_rate=0.1,
-            subsample=0.8,
-            colsample_bytree=0.8,
-            objective="binary:logistic",
-            eval_metric="logloss",
-            random_state=42,
-            n_jobs=-1,
-        ),
+    print(f"[*] Volume Train : {len(X_train)} échantillons ({y_train.mean():.2%} DDoS)")
+    print(f"[*] Volume Test  : {len(X_test)} échantillons ({y_test.mean():.2%} DDoS)")
+
+    # Définition des pipelines étanches : SimpleImputer + StandardScaler + Classifieur
+    # L'imputer et le scaler sont fittés STRICTEMENT sur X_train lors de pipeline.fit()
+    pipelines = {
+        "RandomForest": Pipeline([
+            ("imputer", SimpleImputer(strategy="median")),
+            ("scaler", StandardScaler()),
+            ("classifier", RandomForestClassifier(
+                n_estimators=100,
+                max_depth=12,
+                min_samples_split=5,
+                random_state=42,
+                n_jobs=-1,
+            )),
+        ]),
+        "XGBoost": Pipeline([
+            ("imputer", SimpleImputer(strategy="median")),
+            ("scaler", StandardScaler()),
+            ("classifier", XGBClassifier(
+                n_estimators=100,
+                max_depth=6,
+                learning_rate=0.1,
+                subsample=0.8,
+                colsample_bytree=0.8,
+                objective="binary:logistic",
+                eval_metric="logloss",
+                random_state=42,
+                n_jobs=-1,
+            )),
+        ]),
     }
 
-    resultats = {}
+    resultats: dict[str, Any] = {}
 
-    print("\n" + "=" * 60)
-    print(" 2. ENTRAÎNEMENT & BENCHMARK COMPARATIF")
-    print("=" * 60)
+    print("\n" + "=" * 65)
+    print(" BENCHMARK COMPARATIF EXÉCUTÉ SUR LE TEST EXTERNE")
+    print("=" * 65)
 
-    for nom, clf in modeles.items():
-        print(f"\n[+] Entraînement de {nom}...")
-        clf.fit(X_train_scaled, y_train)
+    for nom, pipe in pipelines.items():
+        print(f"\n[+] Entraînement de la pipeline {nom}...")
+        pipe.fit(X_train, y_train)
 
-        # Prédictions
-        y_pred = clf.predict(X_test_scaled)
-        y_prob = clf.predict_proba(X_test_scaled)[:, 1]
+        # Prédictions sur le test externe
+        y_pred = pipe.predict(X_test)
+        y_prob = pipe.predict_proba(X_test)[:, 1] if hasattr(pipe, "predict_proba") else None
 
-        # Métriques
-        p = precision_score(y_test, y_pred, zero_division=0)
-        r = recall_score(y_test, y_pred, zero_division=0)
-        f1 = f1_score(y_test, y_pred, zero_division=0)
-        roc = roc_auc_score(y_test, y_prob)
+        p = float(precision_score(y_test, y_pred, zero_division=0))
+        r = float(recall_score(y_test, y_pred, zero_division=0))
+        f1 = float(f1_score(y_test, y_pred, zero_division=0))
+        roc = float(roc_auc_score(y_test, y_prob)) if y_prob is not None else 0.0
         cm = confusion_matrix(y_test, y_pred)
         tn, fp, fn, tp = cm.ravel()
 
         resultats[nom] = {
-            "modele": clf,
-            "precision": float(p),
-            "recall": float(r),
-            "f1_score": float(f1),
-            "roc_auc": float(roc),
+            "pipeline": pipe,
+            "precision": round(p, 4),
+            "recall": round(r, 4),
+            "f1_score": round(f1, 4),
+            "roc_auc": round(roc, 4),
             "confusion_matrix": {
                 "tn": int(tn),
                 "fp": int(fp),
@@ -246,45 +323,43 @@ def entrainer_et_evaluer(
             },
         }
 
-        print(f"--- Résultats pour {nom} ---")
+        print(f"--- Résultats réels pour {nom} ---")
         print(f"  - Précision (DDoS) : {p:.4f}")
         print(f"  - Rappel    (DDoS) : {r:.4f}")
         print(f"  - F1-Score  (DDoS) : {f1:.4f}")
         print(f"  - ROC-AUC          : {roc:.4f}")
-        print(f"  - Matrice de confusion [TN={tn}, FP={fp}, FN={fn}, TP={tp}]")
-        print("\nRapport de classification détaillé :")
-        print(classification_report(y_test, y_pred, target_names=["BENIGN", "DDoS"], digits=4))
+        print(f"  - Matrice confusion : [TN={tn}, FP={fp}, FN={fn}, TP={tp}]")
 
-    # 4. Sélection du modèle champion selon le F1-Score
+    # Sélection du champion sur la base du F1-Score
     nom_champion = max(resultats, key=lambda k: resultats[k]["f1_score"])
-    champion = resultats[nom_champion]["modele"]
-    stats_champion = resultats[nom_champion]
+    champion_pipeline = resultats[nom_champion]["pipeline"]
+    metrics_champion = resultats[nom_champion]
 
-    print("\n" + "=" * 60)
-    print(f" 🏆 MODÈLE CHAMPION RETENU : {nom_champion} (F1-Score: {stats_champion['f1_score']:.4f})")
-    print("=" * 60)
+    print("\n" + "=" * 65)
+    print(f" 🏆 MODÈLE CHAMPION RETENU : {nom_champion} (F1-Score: {metrics_champion['f1_score']:.4f})")
+    print("=" * 65)
 
-    # 5. Sauvegarde des artefacts
-    dossier_artefacts.mkdir(parents=True, exist_ok=True)
-    chemin_modele = dossier_artefacts / "model.joblib"
-    chemin_scaler = dossier_artefacts / "scaler.joblib"
-    chemin_features = dossier_artefacts / "features.json"
+    # Construction du bundle d'artefacts complet
+    date_iso = datetime.now(UTC).isoformat()
+    datasets_utilises = list(datasets_dict.keys())
 
-    print(f"[*] Sauvegarde du modèle vers {chemin_modele}...")
-    joblib.dump(champion, chemin_modele)
-
-    print(f"[*] Sauvegarde du scaler vers {chemin_scaler}...")
-    joblib.dump(scaler, chemin_scaler)
-
-    metadonnees_features = {
+    artifact_bundle = {
+        "model": champion_pipeline,
         "features": SELECTED_FEATURES,
         "feature_descriptions": FEATURE_DESCRIPTIONS,
-        "target": "Label",
-        "label_mapping": {
-            0: "Normal",
-            1: "Attaque DDoS",
-        },
+        "version": "1.1.0",
+        "datasets": datasets_utilises,
+        "test_dataset": test_dataset_name,
+        "training_date": date_iso,
         "champion_model": nom_champion,
+        "validation_strategy": validation_strategy,
+        "metrics": {
+            "precision": metrics_champion["precision"],
+            "recall": metrics_champion["recall"],
+            "f1_score": metrics_champion["f1_score"],
+            "roc_auc": metrics_champion["roc_auc"],
+            "confusion_matrix": metrics_champion["confusion_matrix"],
+        },
         "benchmark": {
             k: {
                 "precision": v["precision"],
@@ -297,49 +372,96 @@ def entrainer_et_evaluer(
         },
     }
 
+    chemin_modele = dossier_artefacts / "model.joblib"
+    chemin_features = dossier_artefacts / "features.json"
+
+    print(f"[*] Sauvegarde de l'artefact unifié vers {chemin_modele}...")
+    joblib.dump(artifact_bundle, chemin_modele)
+
     print(f"[*] Sauvegarde des métadonnées vers {chemin_features}...")
     with open(chemin_features, "w", encoding="utf-8") as f:
-        json.dump(metadonnees_features, f, indent=2, ensure_ascii=False)
+        # Exclure l'objet modèle Python brut du fichier JSON
+        meta_json = {k: v for k, v in artifact_bundle.items() if k != "model"}
+        json.dump(meta_json, f, indent=2, ensure_ascii=False)
 
-    print("[✔] Artefacts générés et sauvegardés avec succès dans ml/artifacts/ !")
-    return champion, scaler, metadonnees_features
+    # Exporter également le bundle pour le Edge ML client
+    chemin_edge = BASE_DIR / "frontend" / "src" / "services" / "modelBundle.json"
+    exporter_model_bundle_json(champion_pipeline, chemin_edge)
+
+    print("[✔] Artefacts réels exportés avec succès !")
+    return artifact_bundle
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Entraînement et benchmark ML pour Attack Watcher")
+    parser = argparse.ArgumentParser(description="Pipeline d'entraînement ML Attack Watcher")
     parser.add_argument(
-        "--data-path",
+        "--cic-ids2017",
         type=Path,
-        default=Path("data/Friday-WorkingHours-Afternoon-DDos.pcap_ISCX.csv"),
-        help="Chemin vers le fichier CSV du dataset CIC-IDS2017",
+        default=DATASET_CONFIG["CIC-IDS2017"],
+        help="Chemin vers le dataset CIC-IDS2017 (CSV)",
+    )
+    parser.add_argument(
+        "--cse-cic-ids2018",
+        type=Path,
+        default=DATASET_CONFIG["CSE-CIC-IDS2018"],
+        help="Chemin vers le dataset CSE-CIC-IDS2018 (CSV)",
+    )
+    parser.add_argument(
+        "--cic-ddos2019",
+        type=Path,
+        default=DATASET_CONFIG["CIC-DDoS2019"],
+        help="Chemin vers le dataset CIC-DDoS2019 (CSV)",
+    )
+    parser.add_argument(
+        "--test-dataset",
+        type=str,
+        default=None,
+        help="Nom du dataset à réserver pour le test en mode LODO (ex: CIC-DDoS2019)",
     )
     parser.add_argument(
         "--artifacts-dir",
         type=Path,
-        default=Path("ml/artifacts"),
-        help="Répertoire de sauvegarde des artefacts ML",
-    )
-    parser.add_argument(
-        "--demo",
-        action="store_true",
-        help="Forcer l'utilisation de données synthétiques représentatives",
+        default=BASE_DIR / "ml" / "artifacts",
+        help="Répertoire de destination des artefacts ML",
     )
     parser.add_argument(
         "--sample-size",
         type=int,
         default=None,
-        help="Nombre maximum de lignes à charger (pour tests rapides)",
+        help="Taille maximale d'échantillonnage par dataset (pour tests rapides)",
     )
     args = parser.parse_args()
 
-    X, y = charger_et_nettoyer_donnees(
-        chemin_csv=args.data_path,
-        mode_demo=args.demo,
-        max_lignes=args.sample_size,
+    candidats = {
+        "CIC-IDS2017": args.cic_ids2017,
+        "CSE-CIC-IDS2018": args.cse_cic_ids2018,
+        "CIC-DDoS2019": args.cic_ddos2019,
+    }
+
+    datasets_charges: dict[str, pd.DataFrame] = {}
+    for nom, chemin in candidats.items():
+        if chemin and chemin.exists():
+            try:
+                df = charger_et_nettoyer_dataset(chemin, nom, max_lignes=args.sample_size)
+                if not df.empty:
+                    datasets_charges[nom] = df
+            except (ValueError, KeyError, OSError, RuntimeError) as e:
+                print(f"[!] Erreur lors du chargement de {nom} : {e}")
+        else:
+            print(f"[i] Dataset {nom} non configuré ou introuvable à {chemin}")
+
+    if not datasets_charges:
+        raise FileNotFoundError(
+            "Aucun dataset valide n'a pu être chargé. Assurez-vous qu'au moins un fichier CSV "
+            "de dataset (CIC-IDS2017, CSE-CIC-IDS2018 ou CIC-DDoS2019) est présent dans dataset/."
+        )
+
+    entrainer_et_evaluer(
+        datasets_dict=datasets_charges,
+        test_dataset_name=args.test_dataset,
+        dossier_artefacts=args.artifacts_dir,
     )
-    entrainer_et_evaluer(X, y, args.artifacts_dir)
 
 
 if __name__ == "__main__":
     main()
-

@@ -12,8 +12,8 @@ export default function ArchitectureSection() {
     },
     {
       num: '02',
-      title: 'Split Stratifié sans Fuite',
-      desc: 'Découpage 80/20 avec préservation des proportions de classe AVANT tout ajustement du StandardScaler. Garantit la pureté du test.',
+      title: 'Split Stratifié sans Fuite & LODO',
+      desc: 'Découpage Leave-One-Dataset-Out ou 80/20 stratifié. Imputation médiane et StandardScaler fittés au sein de la Pipeline scikit-learn sans fuite vers le test.',
       icon: ShieldCheck,
       border: 'border-violet-800/60',
     },

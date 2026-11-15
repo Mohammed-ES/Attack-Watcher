@@ -1,5 +1,6 @@
 """
 Application FastAPI principale pour Attack Watcher.
+API REST sécurisée pour la détection DDoS en temps réel et par lot.
 """
 
 from __future__ import annotations
@@ -21,11 +22,11 @@ from backend.app.schemas import (
     CsvPredictionResponse,
     FeaturesMetadataResponse,
     HealthResponse,
+    ModelInfoResponse,
     SinglePredictionRequest,
     SinglePredictionResponse,
 )
 
-# Gestion du cycle de vie de l'application (Lifespan moderne FastAPI)
 predictor_service: AttackPredictor | None = None
 
 
@@ -48,7 +49,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Configuration CORS pour autoriser le frontend Vite / React
+# Configuration CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
@@ -92,9 +93,25 @@ async def health_check() -> HealthResponse:
     )
 
 
+@app.get(f"{settings.API_PREFIX}/model-info", response_model=ModelInfoResponse, tags=["Modèle ML"])
+async def get_model_info() -> ModelInfoResponse:
+    """Renvoie la version, les datasets d'entraînement, la date et les métriques réelles du modèle."""
+    pred = get_predictor()
+    return ModelInfoResponse(
+        version=pred.version,
+        datasets=pred.datasets,
+        training_date=pred.training_date,
+        features=pred.feature_names,
+        champion_model=pred.nom_modele,
+        validation_strategy=pred.validation_strategy,
+        metrics=pred.metrics,
+        benchmark=pred.benchmark,
+    )
+
+
 @app.get(f"{settings.API_PREFIX}/features", response_model=FeaturesMetadataResponse, tags=["Modèle ML"])
 async def get_features_metadata() -> FeaturesMetadataResponse:
-    """Renvoie la liste des features requises, leurs descriptions et les métriques du benchmark."""
+    """Renvoie la liste des 9 features requises, leurs descriptions et les métriques du benchmark."""
     pred = get_predictor()
     meta = pred.features_metadata
     return FeaturesMetadataResponse(
@@ -110,8 +127,8 @@ async def get_features_metadata() -> FeaturesMetadataResponse:
 @app.post(f"{settings.API_PREFIX}/predict", response_model=SinglePredictionResponse, tags=["Inférence"])
 async def predict_single(payload: SinglePredictionRequest) -> SinglePredictionResponse:
     """
-    Prédiction unitaire à partir de la saisie manuelle de 10 features réseau.
-    Retourne 'Normal' ou 'Attaque DDoS' ainsi que la probabilité associée.
+    Prédiction unitaire à partir de la saisie manuelle des 9 features réseau requises.
+    Retourne 'Normal' ou 'Attaque DDoS' ainsi que la probabilité associée si disponible.
     """
     pred = get_predictor()
     try:
@@ -128,8 +145,8 @@ async def predict_csv(
     file: Annotated[UploadFile, File(description="Fichier CSV de flux réseau")]
 ) -> CsvPredictionResponse:
     """
-    Analyse un fichier CSV de trafic réseau par lot.
-    Renvoie le résumé statistique (total, attaques, pourcentage) et les lignes analysées.
+    Analyse un fichier CSV de trafic réseau par lot (taille max: 50 Mo).
+    Valide les colonnes requises et renvoie le résumé statistique (total, erreurs, normal, DDoS) et les lignes.
     """
     if not file.filename or not file.filename.endswith(".csv"):
         raise HTTPException(
@@ -137,7 +154,14 @@ async def predict_csv(
             detail="Format de fichier invalide. Seuls les fichiers .csv sont acceptés.",
         )
 
-    contenu = await file.read()
+    # Lecture sécurisée avec vérification de la limite de taille (50 Mo max)
+    contenu = await file.read(settings.MAX_UPLOAD_SIZE + 1)
+    if len(contenu) > settings.MAX_UPLOAD_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+            detail=f"Fichier trop volumineux. La taille maximale autorisée est de {settings.MAX_UPLOAD_SIZE // (1024 * 1024)} Mo.",
+        )
+
     pred = get_predictor()
 
     try:
@@ -148,7 +172,7 @@ async def predict_csv(
             filename=file.filename,
         )
     except FeatureValidationError as err:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(err)) from err
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(err)) from err
     except (RuntimeError, ValueError) as err:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -162,7 +186,7 @@ async def download_annotated_csv(
 ) -> Response:
     """
     Traite le CSV et retourne directement le fichier enrichi avec les colonnes
-    Attack_Watcher_Prediction et DDoS_Probability en téléchargement.
+    Attack_Watcher_Prediction et DDoS_Probability en téléchargement (limite : 50 Mo).
     """
     if not file.filename or not file.filename.endswith(".csv"):
         raise HTTPException(
@@ -170,7 +194,13 @@ async def download_annotated_csv(
             detail="Seuls les fichiers .csv sont acceptés pour le téléchargement enrichi.",
         )
 
-    contenu = await file.read()
+    contenu = await file.read(settings.MAX_UPLOAD_SIZE + 1)
+    if len(contenu) > settings.MAX_UPLOAD_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+            detail=f"Fichier trop volumineux. La taille maximale autorisée est de {settings.MAX_UPLOAD_SIZE // (1024 * 1024)} Mo.",
+        )
+
     pred = get_predictor()
 
     try:
@@ -182,6 +212,6 @@ async def download_annotated_csv(
             headers={"Content-Disposition": f'attachment; filename="{nom_sortie}"'},
         )
     except FeatureValidationError as err:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(err)) from err
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(err)) from err
     except (RuntimeError, ValueError) as err:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(err)) from err

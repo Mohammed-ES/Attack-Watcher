@@ -5,8 +5,8 @@ export default function FeaturesSection() {
   const features = [
     {
       tag: '01 // Temps Réel',
-      title: 'Inférence Microseconde',
-      desc: 'Classification instantanée du flux réseau à partir des 10 variables fondamentales du trafic IP/TCP avec jauge de probabilité animée.',
+      title: 'Inférence Vectorisée',
+      desc: 'Classification instantanée du flux réseau à partir des 9 variables discriminantes du trafic IP/TCP (sans Destination Port) avec jauge de probabilité.',
       icon: Zap,
       gradient: 'from-cyan-500/20 to-transparent',
       borderColor: 'hover:border-cyan-500/50',
@@ -15,7 +15,7 @@ export default function FeaturesSection() {
     {
       tag: '02 // Traitement par Lot',
       title: 'Analyse Massive de Fichiers CSV',
-      desc: 'Téléversement par glisser-déposer de captures volumineuses, synthèse statistique, détection des pics d’attaques et export des données annotées.',
+      desc: 'Téléversement par glisser-déposer de captures volumineuses (jusqu\'à 50 Mo), synthèse statistique, détection des attaques et export enrichi.',
       icon: Database,
       gradient: 'from-violet-500/20 to-transparent',
       borderColor: 'hover:border-violet-500/50',
@@ -24,7 +24,7 @@ export default function FeaturesSection() {
     {
       tag: '03 // Rigueur Scientifique',
       title: 'Zéro Fuite de Données',
-      desc: 'Le split stratifié est appliqué en amont du StandardScaler. Aucune information du jeu de test ne contamine l’apprentissage du modèle.',
+      desc: 'Le split stratifié ou LODO est appliqué en amont. L\'imputation médiane et le scaler sont encapsulés dans la Pipeline scikit-learn sans fuite.',
       icon: ShieldCheck,
       gradient: 'from-emerald-500/20 to-transparent',
       borderColor: 'hover:border-emerald-500/50',
@@ -32,8 +32,8 @@ export default function FeaturesSection() {
     },
     {
       tag: '04 // Moteur Champion',
-      title: 'Double Benchmark RF & XGBoost',
-      desc: 'Évaluation comparative continue entre Random Forest et XGBoost sur le dataset de référence CIC-IDS2017 avec matrices de confusion détaillées.',
+      title: 'Benchmark RF & XGBoost',
+      desc: 'Évaluation comparative réelle entre Random Forest et XGBoost sur le dataset de référence avec matrices de confusion réelles.',
       icon: Cpu,
       gradient: 'from-amber-500/20 to-transparent',
       borderColor: 'hover:border-amber-500/50',

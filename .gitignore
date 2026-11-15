@@ -3,6 +3,8 @@
 /data/*.pcap
 /data/*.zip
 !/data/.gitkeep
+dataset/
+/dataset/*.csv
 
 # Python & Environnements virtuels
 __pycache__/

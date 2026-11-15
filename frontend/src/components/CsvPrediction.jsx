@@ -1,5 +1,15 @@
 import { useState } from 'react';
-import { UploadCloud, FileText, Download, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import {
+  UploadCloud,
+  FileText,
+  Download,
+  Loader2,
+  AlertCircle,
+  RefreshCw,
+  History,
+  CheckCircle2,
+  AlertTriangle,
+} from 'lucide-react';
 import { predictCsv, downloadAnnotatedCsv } from '../services/api';
 import MetricsOverview from './MetricsOverview';
 import Visualizations from './Visualizations';
@@ -11,6 +21,8 @@ export default function CsvPrediction() {
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState(null);
   const [analysisResult, setAnalysisResult] = useState(null);
+  // Historique des 10 dernières analyses stocké en état local
+  const [analysisHistory, setAnalysisHistory] = useState([]);
 
   const handleFileChange = (e) => {
     const selected = e.target.files?.[0];
@@ -52,6 +64,26 @@ export default function CsvPrediction() {
     try {
       const data = await predictCsv(file);
       setAnalysisResult(data);
+
+      // Enregistrement dans l'historique des 10 dernières analyses
+      const totalRows = data.summary.total_rows ?? data.summary.total_analysed ?? 0;
+      const errorRows = data.summary.error_rows ?? 0;
+      const normalCount = data.summary.normal_count ?? data.summary.total_normal ?? 0;
+      const ddosCount = data.summary.ddos_count ?? data.summary.total_attacks ?? 0;
+      const attackPct = data.summary.attack_percentage ?? 0;
+
+      const historyEntry = {
+        id: Date.now(),
+        dateStr: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        filename: file.name,
+        total_rows: totalRows,
+        error_rows: errorRows,
+        normal_count: normalCount,
+        ddos_count: ddosCount,
+        attack_percentage: attackPct,
+      };
+
+      setAnalysisHistory((prev) => [historyEntry, ...prev.slice(0, 9)]);
     } catch (err) {
       setError(err.message || 'Une erreur est survenue lors de l’analyse du fichier CSV.');
     } finally {
@@ -78,7 +110,7 @@ export default function CsvPrediction() {
         <div className="mb-5">
           <h3 className="text-base font-semibold text-white tracking-tight">Import de Fichier CSV</h3>
           <p className="text-xs text-zinc-400 mt-1">
-            Téléversez des captures de trafic réseau (format CIC-IDS2017) pour une classification de masse par lot.
+            Téléversez des captures de flux réseau (format CIC-IDS2017 sans Destination Port, 50 Mo max) pour une analyse par lot.
           </p>
         </div>
 
@@ -103,8 +135,8 @@ export default function CsvPrediction() {
           </p>
           <p className="text-xs text-zinc-500 mt-1">
             {file
-              ? `${(file.size / 1024).toFixed(1)} Ko - Prêt pour l'inférence vectorisée`
-              : 'Colonnes attendues : Destination Port, Flow Duration, Total Fwd Packets, etc.'}
+              ? `${(file.size / 1024).toFixed(1)} Ko - Prêt pour l'analyse`
+              : 'Colonnes attendues : Flow Duration, Total Fwd Packets, Total Backward Packets, Flow Packets/s...'}
           </p>
         </div>
 
@@ -161,12 +193,67 @@ export default function CsvPrediction() {
         </div>
       </div>
 
-      {/* Résultats de l'analyse */}
+      {/* Résultats réels de l'analyse */}
       {analysisResult && (
         <div className="space-y-6">
           <MetricsOverview summary={analysisResult.summary} />
           <Visualizations summary={analysisResult.summary} rows={analysisResult.rows} />
           <ResultsTable rows={analysisResult.rows} />
+        </div>
+      )}
+
+      {/* Historique des 10 dernières analyses (état local) */}
+      {analysisHistory.length > 0 && (
+        <div className="bg-black/60 border border-zinc-800 rounded-2xl p-6 backdrop-blur shadow-xl">
+          <div className="flex items-center space-x-2 mb-4 pb-3 border-b border-zinc-800">
+            <History className="w-4 h-4 text-blue-400" />
+            <h4 className="text-sm font-semibold text-white">Historique des Analyses (10 dernières)</h4>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="text-zinc-500 border-b border-zinc-800/80 pb-2">
+                  <th className="py-2 px-3 font-medium">Horodatage</th>
+                  <th className="py-2 px-3 font-medium">Fichier</th>
+                  <th className="py-2 px-3 font-medium">Lignes Analysées</th>
+                  <th className="py-2 px-3 font-medium">Lignes en Erreur</th>
+                  <th className="py-2 px-3 font-medium">Trafic Normal</th>
+                  <th className="py-2 px-3 font-medium">Attaques DDoS</th>
+                  <th className="py-2 px-3 font-medium">Taux d'Attaque</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-800/50 font-mono">
+                {analysisHistory.map((item) => (
+                  <tr key={item.id} className="hover:bg-zinc-900/40 text-zinc-300 transition">
+                    <td className="py-2.5 px-3 text-zinc-500">{item.dateStr}</td>
+                    <td className="py-2.5 px-3 text-white font-sans">{item.filename}</td>
+                    <td className="py-2.5 px-3 text-blue-400 font-semibold">{item.total_rows.toLocaleString()}</td>
+                    <td className="py-2.5 px-3">
+                      {item.error_rows > 0 ? (
+                        <span className="text-rose-400">{item.error_rows}</span>
+                      ) : (
+                        <span className="text-zinc-500">0</span>
+                      )}
+                    </td>
+                    <td className="py-2.5 px-3 text-emerald-400">
+                      <span className="inline-flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                        {item.normal_count.toLocaleString()}
+                      </span>
+                    </td>
+                    <td className="py-2.5 px-3 text-rose-400">
+                      <span className="inline-flex items-center gap-1">
+                        <AlertTriangle className="w-3 h-3 text-rose-500" />
+                        {item.ddos_count.toLocaleString()}
+                      </span>
+                    </td>
+                    <td className="py-2.5 px-3 font-semibold text-zinc-200">{item.attack_percentage}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
