@@ -1,16 +1,14 @@
 /**
  * Service de communication avec l'API Attack Watcher.
- * Supporte le backend FastAPI et le repli client Edge ML.
+ * Se connecte exclusivement au backend FastAPI sans aucune donnée simulée.
  */
-
-import { runLocalSinglePrediction, runLocalBatchPrediction, features, feature_descriptions } from './edgeML';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL
   ? import.meta.env.VITE_API_BASE_URL.replace(/\/$/, '')
   : '/api';
 
 /**
- * Traite la réponse HTTP de manière sécurisée.
+ * Traite la réponse HTTP et extrait les messages d'erreur du backend.
  */
 async function parseResponse(res) {
   const text = await res.text();
@@ -29,17 +27,19 @@ async function parseResponse(res) {
     if (!errorMsg) {
       if (res.status === 413) {
         errorMsg = 'Fichier trop volumineux. La taille maximale autorisée est de 50 Mo.';
-      } else if (res.status === 400 || res.status === 422) {
-        errorMsg = 'Format de données ou colonnes CSV invalides.';
-      } else if (res.status === 502 || res.status === 503 || res.status === 504) {
-        errorMsg = `Le backend FastAPI est inaccessible (Erreur ${res.status}).`;
+      } else if (res.status === 422) {
+        errorMsg = 'Données non conformes ou colonnes requises manquantes.';
+      } else if (res.status === 503) {
+        errorMsg = 'Le service d’inférence ML est indisponible sur le serveur.';
+      } else if (res.status === 502 || res.status === 504) {
+        errorMsg = `Le serveur est injoignable (${res.status}).`;
       } else if (res.status === 404 || res.status === 405) {
-        errorMsg = `Endpoint API introuvable (${res.status}).`;
+        errorMsg = `Le backend FastAPI est introuvable (${res.status}). Assurez-vous que le serveur est démarré (start_backend.bat ou uvicorn) et que VITE_API_BASE_URL est configuré si déployé.`;
       } else {
-        errorMsg = `Erreur de communication (${res.status})`;
+        errorMsg = `Erreur de communication avec le serveur (${res.status})`;
       }
     }
-    const err = new Error(errorMsg);
+    const err = new Error(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
     err.status = res.status;
     throw err;
   }
@@ -48,219 +48,72 @@ async function parseResponse(res) {
 }
 
 /**
- * Récupère l'état de santé du système et du modèle.
+ * Vérifie l'état de l'API et du modèle.
  */
 export async function getHealth() {
-  try {
-    const res = await fetch(`${API_BASE}/health`);
-    if (res.ok) {
-      const data = await parseResponse(res);
-      if (data && data.status) return data;
-    }
-  } catch {
-    // Repli sur le mode local
-  }
-
-  return {
-    status: 'healthy',
-    version: '1.1.0',
-    model_loaded: true,
-    champion_model: 'RandomForest',
-  };
+  const res = await fetch(`${API_BASE}/health`);
+  return parseResponse(res);
 }
 
 /**
- * Récupère les métadonnées et métriques complètes du modèle (/api/model-info).
+ * Récupère les métadonnées et métriques réelles de features.json via /api/model-info.
  */
 export async function getModelInfo() {
-  try {
-    const res = await fetch(`${API_BASE}/model-info`);
-    if (res.ok) {
-      const data = await parseResponse(res);
-      if (data && data.version) return data;
-    }
-  } catch {
-    // Repli local
-  }
-
-  return {
-    version: '1.1.0',
-    datasets: ['CIC-IDS2017'],
-    training_date: new Date().toISOString(),
-    features,
-    champion_model: 'RandomForest',
-    metrics: {
-      precision: 0.9999,
-      recall: 0.9993,
-      f1_score: 0.9996,
-      roc_auc: 1.0,
-      confusion_matrix: { tn: 16433, fp: 2, fn: 18, tp: 25478 },
-    },
-    benchmark: {
-      RandomForest: {
-        precision: 0.9999,
-        recall: 0.9993,
-        f1_score: 0.9996,
-        roc_auc: 1.0,
-        confusion_matrix: { tn: 16433, fp: 2, fn: 18, tp: 25478 },
-      },
-      XGBoost: {
-        precision: 0.9999,
-        recall: 0.9993,
-        f1_score: 0.9996,
-        roc_auc: 1.0,
-        confusion_matrix: { tn: 16433, fp: 2, fn: 18, tp: 25478 },
-      },
-    },
-  };
+  const res = await fetch(`${API_BASE}/model-info`);
+  return parseResponse(res);
 }
 
 /**
- * Récupère les métadonnées et la liste des 9 caractéristiques requises.
+ * Récupère l'importance des 9 variables calculée par le RandomForest.
  */
-export async function getFeaturesMetadata() {
-  try {
-    const res = await fetch(`${API_BASE}/features`);
-    if (res.ok) {
-      const data = await parseResponse(res);
-      if (data && data.features) return data;
-    }
-  } catch {
-    // Repli local
-  }
-
-  return {
-    features,
-    feature_descriptions,
-    target: 'Label',
-    champion_model: 'RandomForest',
-    benchmark: {
-      RandomForest: {
-        precision: 0.9999,
-        recall: 0.9993,
-        f1_score: 0.9996,
-        roc_auc: 1.0,
-        confusion_matrix: { tn: 16433, fp: 2, fn: 18, tp: 25478 },
-      },
-    },
-  };
+export async function getFeatureImportance() {
+  const res = await fetch(`${API_BASE}/feature-importance`);
+  return parseResponse(res);
 }
 
 /**
- * Lance une prédiction unitaire sur les 9 features.
+ * Exécute une inférence unitaire sur les 9 features.
  */
 export async function predictSingle(featureDict) {
-  try {
-    const res = await fetch(`${API_BASE}/predict`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(featureDict),
-    });
-
-    if (res.ok) {
-      const data = await parseResponse(res);
-      if (data && data.prediction) return data;
-    } else {
-      // Si validation 422, lever l'erreur directement
-      await parseResponse(res);
-    }
-  } catch (err) {
-    if (err.status === 422 || err.status === 400) {
-      throw err;
-    }
-    // Bascule Edge ML en cas d'indisponibilité réseau
-  }
-
-  return runLocalSinglePrediction(featureDict);
-}
-
-/**
- * Parse un fichier CSV texte en tableau d'objets.
- */
-function parseCsvText(text) {
-  const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
-  if (lines.length < 2) return [];
-
-  const header = lines[0].split(',').map((h) => h.trim().replace(/^["']|["']$/g, ''));
-  const rows = [];
-
-  for (let i = 1; i < lines.length; i++) {
-    const cols = lines[i].split(',').map((c) => c.trim().replace(/^["']|["']$/g, ''));
-    if (cols.length === header.length) {
-      const row = {};
-      header.forEach((h, idx) => {
-        row[h] = Number(cols[idx]) || cols[idx];
-      });
-      rows.push(row);
-    }
-  }
-
-  return rows;
+  const res = await fetch(`${API_BASE}/predict`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(featureDict),
+  });
+  return parseResponse(res);
 }
 
 /**
  * Téléverse un fichier CSV et renvoie les prédictions par lot.
  */
 export async function predictCsv(file) {
-  try {
-    const formData = new FormData();
-    formData.append('file', file);
+  const formData = new FormData();
+  formData.append('file', file);
 
-    const res = await fetch(`${API_BASE}/predict-csv`, {
-      method: 'POST',
-      body: formData,
-    });
-
-    if (res.ok) {
-      const data = await parseResponse(res);
-      if (data && data.summary && data.rows) return data;
-    } else {
-      // Si le serveur a répondu avec une erreur explicite (ex: 400 colonnes manquantes ou 413 fichier trop lourd)
-      // nous DEVONS lever l'erreur pour informer l'utilisateur et ne pas masquer l'erreur
-      await parseResponse(res);
-    }
-  } catch (err) {
-    if (err.status === 400 || err.status === 413 || err.status === 422) {
-      throw err;
-    }
-    // Si et seulement si le serveur est inaccessible ou renvoie 404/405 sur hébergement statique
-  }
-
-  // Repli local dans le navigateur
-  const text = await file.text();
-  const rows = parseCsvText(text);
-
-  if (rows.length === 0) {
-    throw new Error('Le fichier CSV est vide ou ne respecte pas le format attendu.');
-  }
-
-  return runLocalBatchPrediction(rows, file.name);
+  const res = await fetch(`${API_BASE}/predict-csv`, {
+    method: 'POST',
+    body: formData,
+  });
+  return parseResponse(res);
 }
 
 /**
- * Télécharge le fichier CSV enrichi des prédictions.
+ * Télécharge le fichier CSV enrichi des prédictions (Attack_Watcher_Prediction, DDoS_Probability).
  */
 export async function downloadAnnotatedCsv(file) {
-  const text = await file.text();
-  const rows = parseCsvText(text);
-  const result = runLocalBatchPrediction(rows, file.name);
+  const formData = new FormData();
+  formData.append('file', file);
 
-  if (!result.rows || result.rows.length === 0) {
-    throw new Error('Aucun enregistrement valide à exporter.');
+  const res = await fetch(`${API_BASE}/download-annotated-csv`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!res.ok) {
+    await parseResponse(res);
   }
 
-  const featureKeys = Object.keys(rows[0]);
-  const headers = [...featureKeys, 'Attack_Watcher_Prediction', 'DDoS_Probability'];
-  const csvLines = [headers.join(',')];
-
-  for (const item of result.rows) {
-    const rowValues = featureKeys.map((k) => `"${item.features[k] ?? ''}"`);
-    rowValues.push(`"${item.prediction}"`);
-    rowValues.push(`"${item.probability ?? ''}"`);
-    csvLines.push(rowValues.join(','));
-  }
-
-  const blob = new Blob([csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const blob = await res.blob();
   const downloadUrl = window.URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = downloadUrl;

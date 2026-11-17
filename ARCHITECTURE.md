@@ -6,140 +6,148 @@ Ce document détaille l'architecture globale, les choix de conception, le pipeli
 
 ## 1. Vue d'Ensemble du Système
 
-Attack Watcher est conçu selon une architecture découplée trois tiers :
-1. **Couche Présentation (Frontend)** : Interface web réactive construite avec React 19, Vite 8, Tailwind CSS et Lucide Icons.
+Attack Watcher est structuré selon une architecture modulaire trois tiers :
+1. **Couche Présentation (Frontend)** : Interface web réactive construite avec React 19, Vite 8, Tailwind CSS, Framer Motion et Lucide Icons.
 2. **Couche Service & Inférence (Backend)** : API REST asynchrone haute performance propulsée par FastAPI et Pydantic v2.
-3. **Couche Apprentissage & Artefacts (Machine Learning)** : Pipeline d'entraînement réel (Random Forest et XGBoost), imputation médiane, standardisation sans fuite et sérialisation unifiée.
+3. **Couche Apprentissage & Artefacts (Machine Learning)** : Pipeline scikit-learn unifié (`SimpleImputer` + `RandomForestClassifier`) entraîné hors-ligne sur les datasets de référence CIC-IDS2017 et CIC-DDoS2019, et sérialisé dans `ml/artifacts/`.
 
 ```mermaid
 flowchart TD
     subgraph Client["Client Web (React 19 + Vite 8)"]
         UI_Form["Saisie Manuelle (9 Features)"]
         UI_CSV["Import Fichier CSV (Limite 50 Mo)"]
-        UI_Charts["Tableau de Bord & Historique (10 analyses)"]
-        UI_Table["Tableau Paginé & Export Annoté"]
+        UI_Benchmark["Section Benchmark & Métriques (/api/model-info)"]
+        UI_History["Historique Local (10 analyses)"]
+        UI_Export["Téléchargement CSV Enrichi"]
     end
 
-    subgraph Gateway["Serveur API (FastAPI)"]
+    subgraph Gateway["Serveur Backend (FastAPI)"]
         Router["Routeur & Contrôle CORS"]
         Val["Validation Pydantic v2 & 50 Mo Check"]
         Engine["Moteur d'Inférence AttackPredictor"]
-        InfoRoute["/api/model-info & /api/features"]
+        InfoRoute["GET /api/model-info"]
+        HealthRoute["GET /api/health"]
     end
 
-    subgraph ML_Layer["Pipeline Machine Learning (ml/train.py)"]
-        Imputer["SimpleImputer (médiane)"]
-        Scaler["StandardScaler (train-fitted)"]
-        Model["Modèle Champion (RandomForest)"]
-        Artifact["ml/artifacts/model.joblib (Bundle Unifié)"]
-    end
-
-    subgraph Data_Storage["Stockage & Données"]
-        Dataset[("CIC-IDS2017 / 2018 / 2019")]
-        MetaFile[("ml/artifacts/features.json")]
+    subgraph ML_Artifacts["Artefacts Machine Learning (ml/artifacts/)"]
+        ModelArtifact["model.joblib (Pipeline: SimpleImputer + RandomForestClassifier)"]
+        MetaFile["features.json (Métadonnées, Métriques Réelles, Limitations)"]
     end
 
     UI_Form -->|POST /api/predict| Router
     UI_CSV -->|POST /api/predict-csv| Router
-    Client -->|GET /api/model-info| InfoRoute
+    UI_Benchmark -->|GET /api/model-info| InfoRoute
+    Client -->|GET /api/health| HealthRoute
+    UI_Export -->|POST /api/download-annotated-csv| Router
     Router --> Val
     Val --> Engine
-    Engine --> Imputer
-    Imputer --> Scaler
-    Scaler --> Model
-    Model --> Engine
-    Engine -->|JSON / CSV Stream| Client
-    Artifact -.->|Chargement absolu| Engine
-    Dataset -.->|train.py| Artifact
-    Dataset -.->|train.py| MetaFile
+    InfoRoute -->|Lecture directe| MetaFile
+    Engine -.->|Chargement absolu Path(__file__)| ModelArtifact
+    Engine -.->|Chargement absolu Path(__file__)| MetaFile
+    Engine -->|Prédictions & Probabilités| Client
 ```
 
 ---
 
 ## 2. Pipeline Machine Learning
 
+L'entraînement du modèle a été réalisé dans un notebook externe. Les artefacts résultants sont conservés tels quels dans `ml/artifacts/`.
+
 ### 2.1. Sélection des 9 Caractéristiques (Sans Destination Port)
-La variable `Destination Port` a été retirée pour limiter la dépendance du modèle au port de capture et éviter le surapprentissage sur des services fixes (80, 443). Le modèle s'appuie strictement sur 9 métriques de dynamique de flux :
+La variable `Destination Port` a été retirée pour éviter tout surapprentissage dépendant d'un port spécifique (ex: port 80 ou 443). Le modèle s'appuie strictement sur 9 métriques de dynamique de flux réseau :
 
-| Feature | Description | Rôle dans la détection |
-| :--- | :--- | :--- |
-| `Flow Duration` | Durée totale du flux (μs) | Identifie les flux asymétriques ultra-courts ou anormaux. |
-| `Total Fwd Packets` | Nombre de paquets émis | Révèle les volumes massifs de requêtes d'inondation. |
-| `Total Backward Packets` | Nombre de paquets en réponse | Révèle l'absence ou la quasi-absence de réponses du serveur saturé. |
-| `Total Length of Fwd Packets` | Volume total des octets émis | Analyse de la charge utile émise par l'attaquant. |
-| `Total Length of Bwd Packets` | Volume total des octets reçus | Mesure la réponse applicative du serveur cible. |
-| `Bwd Packet Length Std` | Écart-type taille paquets retour | Indique une régularité suspecte ou l'absence de trafic retour. |
-| `Flow Packets/s` | Débit moyen en paquets/seconde | Métrique critique d'inondation de paquets (packet storm). |
-| `Flow IAT Mean` | Intervalle moyen entre paquets | Détecte une fréquence d'émission anormalement élevée. |
-| `ACK Flag Count` | Présence du drapeau TCP ACK | Analyse le protocole de signalement TCP. |
+| # | Feature | Description | Rôle dans la détection |
+| :-: | :--- | :--- | :--- |
+| 1 | `Flow Duration` | Durée totale du flux (μs) | Identifie les flux asymétriques ultra-courts ou anormaux. |
+| 2 | `Total Fwd Packets` | Nombre de paquets émis | Révèle les volumes massifs de requêtes d'inondation. |
+| 3 | `Total Backward Packets` | Nombre de paquets en réponse | Révèle l'absence ou la quasi-absence de réponses du serveur saturé. |
+| 4 | `Total Length of Fwd Packets` | Volume total des octets émis | Analyse la charge utile émise par l'émetteur. |
+| 5 | `Total Length of Bwd Packets` | Volume total des octets reçus | Mesure la réponse applicative du serveur cible. |
+| 6 | `Bwd Packet Length Std` | Écart-type taille paquets retour | Indique une régularité suspecte ou l'absence de trafic retour. |
+| 7 | `Flow Packets/s` | Débit moyen en paquets/seconde | Métrique critique d'inondation de paquets (packet storm). |
+| 8 | `Flow IAT Mean` | Intervalle moyen entre paquets | Détecte une cadence d'émission anormalement élevée. |
+| 9 | `ACK Flag Count` | Présence du drapeau TCP ACK | Analyse le protocole de signalement TCP. |
 
-### 2.2. Prévention Stricte des Fuites de Données (Zero Leakage)
-Pour garantir la rigueur scientifique et l'étanchéité des évaluations :
-- Le nettoyage des données (suppression des espaces des noms de colonnes, conversion des valeurs `+inf` et `-inf` en `NaN`, élimination des doublons) est appliqué en amont.
-- Le découpage des données (Stratégie Leave-One-Dataset-Out ou split stratifié 80/20) est réalisé avant tout traitement statistique.
-- L'imputation médiane (`SimpleImputer(strategy='median')`) et la normalisation (`StandardScaler()`) sont intégrées dans la même `Pipeline` scikit-learn que le classifieur.
-- L'appel `pipeline.fit(X_train, y_train)` assure que la médiane, la moyenne et l'écart-type sont calculés exclusivement sur les données d'apprentissage. Le jeu de test n'est jamais fitté.
+### 2.2. Composition du Pipeline et Élimination des Fuites (Anti-Leakage)
+- **Structure** : `sklearn.pipeline.Pipeline` contenant :
+  1. `SimpleImputer(strategy='median')` : Imputation des valeurs manquantes (`NaN`) via la médiane calculée sur le jeu d'entraînement.
+  2. `RandomForestClassifier(class_weight='balanced', max_depth=20, min_samples_leaf=5, n_jobs=-1, random_state=42)` : Forêt d'arbres décisionnels.
+- **Absence de Scaler** : Aucun composant de mise à l'échelle n'est appliqué. Les arbres de décision étant naturellement invariants aux changements d'échelle monotones, l'omission du scaler simplifie la chaîne de traitement et élimine toute distorsion statistique.
+- **Architecture Dédiée** : Le modèle de production est exclusivement le `RandomForestClassifier`.
+- **Étanchéité des Données** : L'entraînement et le test ont été conduits sur des sous-ensembles et fichiers strictement disjoints. L'imputation est encapsulée dans le pipeline et ajustée (`fit`) uniquement sur le train set.
 
-### 2.3. Benchmark et Modèle Champion
-Le script `ml/train.py` exécute un banc d'essai réel entre deux algorithmes sur le jeu de test externe held-out (41 931 flux réels) :
-- **Random Forest Classifier** : 100 estimateurs, profondeur maximale 12, parallélisé.
-- **XGBoost Classifier** : 100 estimateurs, profondeur maximale 6, learning rate 0.1.
-
-Résultats mesurés sur le test externe :
-- **Random Forest (Champion)** : F1-Score = 0.9996, Précision = 0.9999, Rappel = 0.9993, ROC-AUC = 1.0000.
-  - Matrice de confusion : TN = 16 433, FP = 2, FN = 18, TP = 25 478.
-- **XGBoost** : F1-Score = 0.9996, Précision = 0.9999, Rappel = 0.9993, ROC-AUC = 1.0000.
-
-Le pipeline champion est sérialisé dans `ml/artifacts/model.joblib` avec l'ensemble des métadonnées (version, date ISO, datasets, matrice de confusion réelle).
+### 2.3. Évaluation Réelle sur Test Externe
+Les métriques proviennent directement de l'évaluation sur le jeu de test externe réservé (documentées dans `ml/artifacts/features.json`) :
+- **Jeu Global (5 374 929 flux)** :
+  - Exactitude (Accuracy) : 99.61 %
+  - Précision DDoS : 99.93 %
+  - Rappel DDoS : 99.61 %
+  - F1-Score DDoS : 99.77 %
+  - Matrice de confusion :
+    - Vrais Négatifs (TN) : 845 791
+    - Faux Positifs (FP) : 3 257
+    - Faux Négatifs (FN) : 17 510
+    - Vrais Positifs (TP) : 4 508 371
+- **Évaluation Normal 2017 Seul (818 484 flux)** :
+  - Rappel DDoS : 99.61 %
+  - Taux de Faux Positifs : 0.37 %
 
 ---
 
 ## 3. Architecture Backend (FastAPI)
 
-### 3.1. Organisation Modulaire
-- `backend/app/main.py` : Point d'entrée de l'application, gestion du cycle de vie asynchrone (`lifespan`), middleware CORS et contrôleurs de routes.
-- `backend/app/config.py` : Résolution dynamique des chemins absolus du projet et définition de la taille maximale des fichiers (50 Mo).
-- `backend/app/schemas.py` : Schémas Pydantic v2 validant les 9 features requises, les statistiques de lot (`total_rows`, `error_rows`, `normal_count`, `ddos_count`) et le schéma `ModelInfoResponse`.
-- `backend/app/predictor.py` : Service d'inférence chargeant le bundle d'artefacts ML absolu et appliquant les prédictions vectorisées sans aucune donnée simulée.
+### 3.1. Organisation des Modules
+- `backend/app/main.py` : Contrôleurs de routes, cycle de vie (`lifespan`), middleware CORS et gestion des exceptions HTTP (413, 422, 503).
+- `backend/app/config.py` : Résolution des chemins de fichiers au moyen de `pathlib.Path(__file__)` pour assurer un chargement indépendant du répertoire d'exécution, et définition de la limite maximale d'envoi (50 Mo).
+- `backend/app/schemas.py` : Définition des schémas Pydantic v2 (contrôle de validation des 9 features, schéma d'inférence unitaire, statistiques de lot, et schéma complet pour `ModelInfoResponse`).
+- `backend/app/predictor.py` : Service singleton encapsulant le chargement de `model.joblib` et `features.json`, effectuant le nettoyage vectoriel et calculant les prédictions (`predict`) et probabilités d'attaque (`predict_proba`).
 
 ### 3.2. Contrat des Points d'Accès
 
-| Méthode | Route | Rôle | Format Réponse |
+| Méthode | Route | Description | Code de Réponse Principal |
 | :--- | :--- | :--- | :--- |
-| `GET` | `/api/health` | Contrôle d'état et disponibilité du modèle | JSON (`HealthResponse`) |
-| `GET` | `/api/model-info` | Version, datasets, date d'entraînement et métriques réelles | JSON (`ModelInfoResponse`) |
-| `GET` | `/api/features` | Métadonnées descriptives des 9 features | JSON (`FeaturesMetadataResponse`) |
-| `POST` | `/api/predict` | Classification unitaire d'un flux (9 features) | JSON (`SinglePredictionResponse`) |
-| `POST` | `/api/predict-csv` | Analyse par lot de fichiers CSV (limite 50 Mo) | JSON (`CsvPredictionResponse`) |
-| `POST` | `/api/download-annotated-csv` | Téléchargement du CSV avec colonnes de verdict et probabilités | Fichier CSV annoté |
+| `GET` | `/api/health` | Diagnostic de santé du service et vérification du chargement du modèle | 200 (OK) / 200 (Degraded si modèle absent) |
+| `GET` | `/api/model-info` | Expose l'intégralité des métadonnées de `features.json` sans calcul simulé | 200 (OK) / 503 (Si indisponible) |
+| `POST` | `/api/predict` | Classification d'un flux unitaire via les 9 features | 200 (OK) / 422 (Invalide) / 503 (Modèle indisponible) |
+| `POST` | `/api/predict-csv` | Classification par lot à partir d'un fichier CSV (50 Mo max) | 200 (OK) / 413 (Trop gros) / 422 (Features manquantes) / 503 |
+| `POST` | `/api/download-annotated-csv` | Streaming du fichier CSV enrichi des colonnes de prédiction et de probabilité | 200 (Fichier attaché) / 413 / 422 / 503 |
 
-### 3.3. Gestion des Erreurs et Robustesse
-- **Colonnes manquantes** : Si le fichier CSV ne contient pas l'intégralité des 9 features requises, l'API rejette la requête avec le code HTTP 400 et détaille la liste exacte des colonnes absentes.
-- **Dépassement de taille** : Tout téléversement excédant 50 Mo est interrompu avec le code HTTP 413 (Content Too Large).
-- **Valeurs aberrantes** : Les valeurs textuelles non convertibles sont comptabilisées dans `error_rows` et imputées par la médiane calculée sur le train set.
+### 3.3. Règles de Validation et Codes d'Erreur
+1. **Features Manquantes (HTTP 422)** :
+   Lorsqu'un fichier CSV est téléversé, les noms de colonnes sont nettoyés (`strip()`). Si une ou plusieurs des 9 caractéristiques requises sont absentes, la requête est immédiatement refusée avec le code HTTP 422 et le message détaille explicitement la liste des colonnes manquantes :
+   ```json
+   {
+     "detail": "Colonnes obligatoires manquantes dans le fichier CSV: ['ACK Flag Count', 'Flow IAT Mean']"
+   }
+   ```
+   Les colonnes additionnelles ou superflues présentes dans le CSV sont ignorées sans bloquer le traitement.
+2. **Taille Excessif (HTTP 413)** :
+   Si le flux dépasse 50 Mo (52 428 800 octets), le serveur interrompt immédiatement le traitement et répond avec le code HTTP 413.
+3. **Valeurs Invalides ou Infinies** :
+   Les colonnes sélectionnées sont converties via `pd.to_numeric(errors="coerce")`, et les valeurs `+inf` / `-inf` sont remplacées par `np.nan`. Le nombre de lignes contenant au moins une valeur non conforme est reporté dans le champ `error_rows`. Le `SimpleImputer` du pipeline se charge de l'imputation médiane sans échec d'inférence.
+4. **Indisponibilité du Modèle (HTTP 503)** :
+   Aucun résultat factice ni prédiction simulée n'est produit. Si les artefacts sont introuvables ou corrompus, le statut de santé indique `degraded` et tout appel de prédiction retourne un code HTTP 503 explicite.
 
 ---
 
 ## 4. Architecture Frontend (React 19 + Vite 8)
 
 ### 4.1. Composants d'Interface
-- `ConsoleSection.jsx` : Conteneur principal offrant l'accès alterné à la saisie unitaire et à l'analyse CSV.
-- `ManualPrediction.jsx` : Formulaire des 9 features réseau avec présélections réelles issues du dataset.
-- `CsvPrediction.jsx` : Zone de glisser-déposer, validation locale, analyse vectorisée et historique des 10 derniers lots.
-- `MetricsOverview.jsx` : Cartes métriques réelles (Flux Analysés, Lignes en Erreur, Trafic Normal, Attaques DDoS, Taux d'Attaque).
-- `ResultsTable.jsx` : Tableau paginé affichant les lignes, le verdict, la probabilité DDoS (uniquement si fournie) et les métriques de paquets.
-- `BenchmarkSection.jsx` : Affichage dynamique des performances réelles issues de `/api/model-info`.
+- `App.jsx` : Orchestrateur principal intégrant la navigation fluide, le canvas interactif d'arrière-plan, et l'ensemble des sections fonctionnelles.
+- `BenchmarkSection.jsx` : Récupère dynamiquement les données depuis `/api/model-info` pour afficher la version, la date d'entraînement, les datasets, les métriques réelles (précision, rappel, F1, accuracy, taux de faux positifs), la matrice de confusion réelle, la mention "Prototype de recherche" et les limitations.
+- `ManualPrediction.jsx` : Formulaire de diagnostic unitaire pour les 9 features avec presets validés sur le modèle réel (`Trafic Normal` -> verdict Normal, `Attaque DDoS` -> verdict DDoS).
+- `CsvPrediction.jsx` : Zone de dépôt CSV, suivi des lignes analysées, des lignes en erreur, et gestion de l'historique des 10 dernières analyses stocké en état local.
+- `MetricsOverview.jsx` & `ResultsTable.jsx` : Synthèse globale du lot et tableau paginable affichant pour chaque flux le verdict et la probabilité DDoS continue.
+- `FaqSection.jsx` : Réponses techniques exactes alignées avec l'architecture réelle (anti-leakage, 9 features, SimpleImputer, absence de mise à l'échelle et modèle dédié).
 
-### 4.2. Moteur Edge ML (Repli Navigateur)
-Pour garantir une disponibilité continue même sur hébergement statique ou en cas d'indisponibilité du serveur, le fichier `frontend/src/services/edgeML.js` intègre les 100 arbres de décision et le StandardScaler exportés à l'entraînement, assurant une inférence locale stricte sur les 9 features.
+### 4.2. Absence Totale de Données Simulées
+Le service `frontend/src/services/api.js` communique exclusivement avec les points d'accès du backend FastAPI. Tout échec réseau ou code d'erreur HTTP (413, 422, 503) est intercepté et affiché clairement à l'utilisateur sans bascule vers un algorithme simulé ou un faux résultat.
 
 ---
 
 ## 5. Limites et Périmètre Opérationnel
 
-1. **Généralisation Inter-Datasets (Domain Shift)** :
-   La détection DDoS par apprentissage supervisé peut subir des variations lorsque le modèle est confronté à des environnements réseau dont les topologies, les latences moyennes ou les charges applicatives diffèrent substantiellement de celles de CIC-IDS2017 / 2018 / 2019.
-2. **Périmètre des Attaques Couvertes** :
-   Le modèle est optimisé pour les attaques par déni de service volumétriques et par épuisement d'état (ex: SYN Flood, UDP Flood, HTTP Flood). Les attaques de niveau applicatif sans anomalie de débit (ex: injections SQL, cross-site scripting) ainsi que les attaques furtives à débit ultra-faible (ex: Slowloris) sortent du champ d'action de ce classifieur de flux.
-3. **Absence du Port de Destination** :
-   La suppression de `Destination Port` empêche le modèle de surapprendre sur des ports cibles spécifiques mais impose une sensibilité accrue à la régularité statistique des flux et aux variations temporelles d'inter-arrivée.
+Conformément à la documentation officielle des artefacts :
+1. **Prototype de recherche** : Non validé pour un déploiement en production industrielle.
+2. **Famille d'attaques** : Les attaques réservées au test appartiennent aux mêmes familles que celles de l'entraînement (DrDoS) ; la généralisation à d'autres types d'attaques non volumétriques n'est pas mesurée.
+3. **Attaques exclues** : Les attaques applicatives ciblées sans volume anormal ou sans signature volumétrique (PortScan, Bot, Web Attack, FTP-Patator, Slowloris) sont expressément hors du champ de détection de ce modèle.

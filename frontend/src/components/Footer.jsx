@@ -1,10 +1,23 @@
+import { useState, useEffect } from 'react';
 import { ArrowUpRight } from 'lucide-react';
+import { getHealth, getModelInfo } from '../services/api';
 
 export default function Footer() {
+  const [health, setHealth] = useState(null);
+  const [modelInfo, setModelInfo] = useState(null);
+
+  useEffect(() => {
+    getHealth().then(setHealth).catch(() => setHealth({ status: 'degraded' }));
+    getModelInfo().then(setModelInfo).catch(() => null);
+  }, []);
+
   const scrollTo = (id) => {
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: 'smooth' });
   };
+
+  const isHealthy = health?.status === 'healthy';
+  const version = modelInfo?.version || '1.3.0';
 
   return (
     <footer className="bg-black border-t border-[#1a1a1e] py-16 text-neutral-400 text-xs">
@@ -24,13 +37,14 @@ export default function Footer() {
             </div>
 
             <p className="text-neutral-500 text-xs font-light max-w-sm leading-relaxed">
-              Architecture d'apprentissage automatique supervisé pour l'inspection et la classification
-              des flux réseau à haut débit. Modèles RandomForest & XGBoost entraînés sur CIC-IDS2017.
+              Prototype de détection DDoS par Random Forest, sur fichiers CSV CIC-IDS2017 et CIC-DDoS2019.
             </p>
 
-            <div className="pt-1 flex items-center space-x-2 text-[11px] text-neutral-500 font-mono">
-              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-              <span>Système Opérationnel | API FastAPI v1.0.0</span>
+            <div className="pt-1 flex items-center space-x-2 text-[11px] font-mono">
+              <span className={`w-2 h-2 rounded-full ${isHealthy ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
+              <span className="text-neutral-400">
+                {isHealthy ? 'Système Opérationnel' : 'Système Dégradé'} | Version {version}
+              </span>
             </div>
           </div>
 
@@ -44,13 +58,13 @@ export default function Footer() {
                 </button>
               </li>
               <li>
-                <button onClick={() => scrollTo('capabilities')} className="hover:text-white transition">
+                <button onClick={() => scrollTo('model-info')} className="hover:text-white transition">
                   Pipeline & Modèles
                 </button>
               </li>
               <li>
                 <button onClick={() => scrollTo('console')} className="hover:text-white transition">
-                  Console Live
+                  Console
                 </button>
               </li>
               <li>
@@ -105,12 +119,10 @@ export default function Footer() {
         {/* Ligne inférieure de copyright */}
         <div className="pt-8 border-t border-[#1a1a1e] flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-neutral-500 font-mono">
           <div>
-            © 2026 Attack Watcher. Détection d'intrusions et atténuation DDoS en temps réel.
+            © 2026 Attack Watcher. Détection DDoS par machine learning. Prototype de recherche.
           </div>
           <div className="flex items-center space-x-4">
             <span className="text-neutral-500">MIT License</span>
-            <span>•</span>
-            <span className="text-neutral-500">Zero Data Leakage Guaranteed</span>
           </div>
         </div>
       </div>

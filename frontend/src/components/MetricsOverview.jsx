@@ -13,7 +13,10 @@ export default function MetricsOverview({ summary }) {
     {
       title: 'Flux Analysés',
       value: totalRows.toLocaleString(),
-      subtitle: `${errorRows} ligne(s) avec valeurs manquantes/invalides`,
+      subtitle:
+        summary.nan_inf_rate != null && summary.nan_inf_rate > 0
+          ? `${errorRows} ligne(s) en erreur (${(summary.nan_inf_rate * 100).toFixed(1)}% NaN/inf)`
+          : `${errorRows} ligne(s) avec valeurs manquantes/invalides`,
       icon: FileSpreadsheet,
       iconColor: 'text-[#2563eb]',
       borderColor: 'border-[#1a1a1e] hover:border-[#2563eb]/40',

@@ -10,31 +10,31 @@ export default function HowItWorksSection() {
       num: '01',
       label: 'ÉTAPE 01',
       title: 'Sélection & Ingestion',
-      desc: 'Capture et extraction vectorielle des flux TCP/IP à partir des paquets réseau bruts du dataset CIC-IDS2017.',
+      desc: 'Lecture d\'un fichier CSV au format CIC-IDS2017 ou saisie manuelle de 9 valeurs.',
       icon: Search,
       yOffset: 'translate-y-0', // Position haute
     },
     {
       num: '02',
       label: 'ÉTAPE 02',
-      title: 'Pipeline Étanche',
-      desc: 'Imputation médiane et StandardScaler fittés strictement au sein de la pipeline d\'entraînement sans fuite vers le test.',
+      title: 'Prétraitement',
+      desc: 'Valeurs infinies remplacées, conversion numérique, imputation médiane intégrée à la pipeline.',
       icon: BarChart3,
       yOffset: 'translate-y-8', // Position basse (ondulation)
     },
     {
       num: '03',
       label: 'ÉTAPE 03',
-      title: 'Inférence Champion',
-      desc: 'Classification vectorisée par Random Forest optimisé face à XGBoost avec sélection au F1-Score sur test externe.',
+      title: 'Inférence Random Forest',
+      desc: 'Classification vectorisée par Random Forest au sein de la pipeline avec calcul du score du modèle (non calibré).',
       icon: ShieldCheck,
       yOffset: '-translate-y-2', // Position haute (ondulation)
     },
     {
       num: '04',
       label: 'ÉTAPE 04',
-      title: 'Verdict & Protection',
-      desc: 'Discrimination certifiée entre trafic bénin et attaque DDoS par saturation, prête pour export SIEM et audit.',
+      title: 'Verdict et export',
+      desc: 'Verdict Normal ou DDoS par flux, puis export CSV annoté.',
       icon: Key,
       yOffset: 'translate-y-6', // Position basse (ondulation)
     },
@@ -60,7 +60,7 @@ export default function HowItWorksSection() {
             </h2>
 
             <p className="text-neutral-400 text-sm sm:text-base font-normal">
-              Une fluidité architecturale appliquée à l'inspection en temps réel et la neutralisation des attaques DDoS.
+              Analyse de fichiers de flux et classification Normal ou DDoS.
             </p>
           </div>
         </ScrollReveal>

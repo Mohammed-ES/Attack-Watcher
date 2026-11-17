@@ -1,6 +1,6 @@
 """
 Modèles de validation Pydantic v2 pour l'API Attack Watcher.
-Définit les schémas stricts pour l'inférence unitaire, l'analyse par lot CSV et les métadonnées.
+Définit les schémas stricts pour l'inférence unitaire, l'analyse par lot CSV et le point d'accès /api/model-info.
 """
 
 from typing import Any
@@ -30,7 +30,7 @@ class SinglePredictionRequest(BaseModel):
     ack_flag_count: float = Field(..., alias="ACK Flag Count", ge=0, le=1, description="Drapeau ACK (0 ou 1)")
 
     def to_features_dict(self) -> dict[str, float]:
-        """Convertit l'objet en dictionnaire avec les noms de colonnes exacts pour le modèle."""
+        """Convertit l'objet en dictionnaire ordonné avec les noms exacts de features.json."""
         return {
             "Flow Duration": float(self.flow_duration),
             "Total Fwd Packets": float(self.total_fwd_packets),
@@ -46,9 +46,9 @@ class SinglePredictionRequest(BaseModel):
 
 class SinglePredictionResponse(BaseModel):
     """Réponse d'une prédiction unitaire."""
-    prediction: str = Field(..., description="'Normal' ou 'Attaque DDoS'")
+    prediction: str = Field(..., description="'Normal' ou 'DDoS'")
     is_ddos: bool = Field(..., description="True si classé en attaque DDoS")
-    probability: float | None = Field(None, ge=0.0, le=1.0, description="Probabilité de la classe DDoS")
+    probability: float = Field(..., ge=0.0, le=1.0, description="Probabilité de la classe DDoS via predict_proba")
     confidence: float = Field(..., ge=0.0, le=100.0, description="Niveau de certitude en pourcentage")
     model_name: str = Field(..., description="Nom de l'algorithme ayant produit le résultat")
     input_features: dict[str, float]
@@ -59,7 +59,7 @@ class CsvRowPrediction(BaseModel):
     row_index: int
     prediction: str
     is_ddos: bool
-    probability: float | None = None
+    probability: float
     features: dict[str, Any]
 
 
@@ -70,40 +70,50 @@ class CsvSummary(BaseModel):
     normal_count: int
     ddos_count: int
     attack_percentage: float
+    nan_inf_rate: float = 0.0
 
-    # Alias pour compatibilité ascendante avec les composants existants
+    # Alias pour compatibilité ascendante avec les composants React
     total_analysed: int
     total_attacks: int
     total_normal: int
 
 
+class ScoreHistogramBin(BaseModel):
+    """Tranche de distribution des scores de probabilité du modèle."""
+    bin: str
+    min_score: float
+    max_score: float
+    count: int
+
+
+class FeatureImportanceItem(BaseModel):
+    """Importance relative d'une variable au sein du RandomForest."""
+    feature: str
+    importance: float
+
+
 class CsvPredictionResponse(BaseModel):
-    """Réponse globale d'un téléversement de fichier CSV."""
+    """Réponse globale d'un téléversement de fichier CSV avec pagination et métriques avancées."""
     summary: CsvSummary
     rows: list[CsvRowPrediction]
     filename: str
+    top_suspicious: list[CsvRowPrediction] = []
+    score_histogram: list[ScoreHistogramBin] = []
 
 
 class ModelInfoResponse(BaseModel):
-    """Informations complètes et métriques réelles sur le modèle en production."""
+    """Informations complètes lues depuis features.json."""
     version: str
-    datasets: list[str]
-    training_date: str
+    date_entrainement: str
+    sklearn_version: str | None = None
+    modele: str | None = None
     features: list[str]
-    champion_model: str
-    validation_strategy: str | None = None
-    metrics: dict[str, Any]
-    benchmark: dict[str, Any] | None = None
-
-
-class FeaturesMetadataResponse(BaseModel):
-    """Métadonnées des features et statistiques du modèle pour l'interface utilisateur."""
-    features: list[str]
-    feature_descriptions: dict[str, str]
-    target: str
-    label_mapping: dict[str, str]
-    champion_model: str
-    benchmark: dict[str, Any] | None = None
+    classes: dict[str, str] | None = None
+    datasets_entrainement: list[str]
+    dataset_test_externe: str
+    metriques_test_externe: dict[str, Any]
+    metriques_test_externe_normal_2017_seul: dict[str, Any]
+    limitations: list[str]
 
 
 class HealthResponse(BaseModel):
@@ -111,4 +121,4 @@ class HealthResponse(BaseModel):
     status: str
     version: str
     model_loaded: bool
-    champion_model: str | None = None
+    model_name: str | None = None

@@ -14,6 +14,7 @@ import { predictCsv, downloadAnnotatedCsv } from '../services/api';
 import MetricsOverview from './MetricsOverview';
 import Visualizations from './Visualizations';
 import ResultsTable from './ResultsTable';
+import TopSuspiciousTable from './TopSuspiciousTable';
 
 export default function CsvPrediction() {
   const [file, setFile] = useState(null);
@@ -196,8 +197,28 @@ export default function CsvPrediction() {
       {/* Résultats réels de l'analyse */}
       {analysisResult && (
         <div className="space-y-6">
+          {/* Bandeau d'alerte si nan_inf_rate dépasse 5% */}
+          {analysisResult.summary?.nan_inf_rate > 0.05 && (
+            <div className="p-4 sm:p-5 rounded-2xl bg-amber-950/40 border border-amber-500/60 text-amber-200 text-xs flex items-start space-x-3 shadow-lg">
+              <AlertTriangle className="w-5 h-5 flex-shrink-0 text-amber-400 mt-0.5" />
+              <div className="space-y-1">
+                <span className="font-bold text-amber-400 block uppercase tracking-wider">
+                  Avertissement : Taux élevé de valeurs manquantes ou infinies
+                </span>
+                <p className="text-amber-200/90 leading-relaxed">
+                  {(analysisResult.summary.nan_inf_rate * 100).toFixed(2)} % des valeurs réseau étaient manquantes (NaN) ou infinies (inf) dans les 9 features avant imputation médiane. Les scores associés sont susceptibles d'être affectés.
+                </p>
+              </div>
+            </div>
+          )}
+
           <MetricsOverview summary={analysisResult.summary} />
-          <Visualizations summary={analysisResult.summary} rows={analysisResult.rows} />
+          <Visualizations
+            summary={analysisResult.summary}
+            rows={analysisResult.rows}
+            scoreHistogram={analysisResult.score_histogram}
+          />
+          <TopSuspiciousTable rows={analysisResult.top_suspicious} />
           <ResultsTable rows={analysisResult.rows} />
         </div>
       )}

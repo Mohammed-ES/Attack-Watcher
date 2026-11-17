@@ -12,8 +12,8 @@ export default function ArchitectureSection() {
     },
     {
       num: '02',
-      title: 'Split Stratifié sans Fuite & LODO',
-      desc: 'Découpage Leave-One-Dataset-Out ou 80/20 stratifié. Imputation médiane et StandardScaler fittés au sein de la Pipeline scikit-learn sans fuite vers le test.',
+      title: 'Split Stratifié sans Fuite & Évaluation Externe',
+      desc: 'Entraînement et test sur sous-ensembles réservés. Imputation médiane (SimpleImputer) fittée au sein de la Pipeline scikit-learn sans aucun scaler.',
       icon: ShieldCheck,
       border: 'border-violet-800/60',
     },

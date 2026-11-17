@@ -64,6 +64,24 @@ export default function ManualPrediction({ featuresMetadata }) {
     setLoading(true);
     setError(null);
 
+    // Validation des champs côté client
+    const ackVal = Number(formData['ACK Flag Count']);
+    if (isNaN(ackVal) || ackVal < 0 || !Number.isInteger(ackVal)) {
+      setError('Le champ "ACK Flag Count" doit être un nombre entier positif ou nul (0 ou 1).');
+      setLoading(false);
+      return;
+    }
+
+    for (const key of featureKeys) {
+      if (key === 'ACK Flag Count') continue;
+      const val = Number(formData[key]);
+      if (isNaN(val) || val < 0) {
+        setError(`Le champ "${key}" doit être un nombre positif ou nul.`);
+        setLoading(false);
+        return;
+      }
+    }
+
     try {
       const res = await predictSingle(formData);
       setResult(res);
@@ -81,7 +99,7 @@ export default function ManualPrediction({ featuresMetadata }) {
         <div className="flex flex-wrap items-center justify-between pb-5 mb-6 border-b border-zinc-800 gap-3">
           <div>
             <h3 className="text-base font-semibold text-white tracking-tight">Paramètres du Flux Réseau</h3>
-            <p className="text-xs text-zinc-400">Renseignez les 9 métriques du flux pour l'analyse en temps réel (sans Destination Port)</p>
+            <p className="text-xs text-zinc-400">Renseignez les 9 métriques du flux pour l'analyse (sans Destination Port)</p>
           </div>
 
           <div className="flex items-center space-x-2">
@@ -134,20 +152,22 @@ export default function ManualPrediction({ featuresMetadata }) {
                   </div>
 
                   {isFlag ? (
-                    <select
+                    <input
                       id={`field-${key}`}
-                      value={formData[key]}
-                      onChange={(e) => handleChange(key, Number(e.target.value))}
-                      className="w-full bg-zinc-950/80 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500 transition"
-                    >
-                      <option value={0}>0 - Drapeau absent</option>
-                      <option value={1}>1 - Drapeau présent (ACK)</option>
-                    </select>
+                      type="number"
+                      step="1"
+                      min="0"
+                      required
+                      value={formData[key] ?? 0}
+                      onChange={(e) => handleChange(key, e.target.value)}
+                      className="w-full bg-zinc-950/80 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs font-mono text-white focus:outline-none focus:border-blue-500 transition"
+                    />
                   ) : (
                     <input
                       id={`field-${key}`}
                       type="number"
                       step="any"
+                      min="0"
                       required
                       value={formData[key] ?? ''}
                       onChange={(e) => handleChange(key, e.target.value)}
@@ -249,7 +269,7 @@ export default function ManualPrediction({ featuresMetadata }) {
               {result.probability != null && (
                 <div className="mt-5 space-y-2 pt-4 border-t border-zinc-800/60">
                   <div className="flex justify-between text-xs">
-                    <span className="text-zinc-400">Probabilité d'attaque DDoS :</span>
+                    <span className="text-zinc-400">Score du modèle (non calibré) :</span>
                     <span className="font-mono font-bold text-white">
                       {(result.probability * 100).toFixed(2)}%
                     </span>

@@ -1,6 +1,6 @@
 import { ShieldCheck, Cpu, Sliders, FileSpreadsheet } from 'lucide-react';
 
-export default function Header({ activeTab, setActiveTab, health, championModel }) {
+export default function Header({ activeTab, setActiveTab, health, modelName }) {
   const isHealthy = health?.status === 'healthy';
 
   return (
@@ -30,7 +30,7 @@ export default function Header({ activeTab, setActiveTab, health, championModel 
             <div className="hidden md:flex items-center space-x-2 text-xs bg-slate-950/60 border border-slate-800 px-3 py-1.5 rounded-md">
               <Cpu className="w-3.5 h-3.5 text-slate-400" />
               <span className="text-slate-400">Modèle:</span>
-              <span className="font-medium text-slate-200">{championModel || 'RandomForest'}</span>
+              <span className="font-medium text-slate-200">{modelName || 'RandomForest'}</span>
             </div>
 
             <div className="flex items-center space-x-2 text-xs bg-slate-950/60 border border-slate-800 px-3 py-1.5 rounded-md">

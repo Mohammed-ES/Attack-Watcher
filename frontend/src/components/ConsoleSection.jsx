@@ -1,11 +1,21 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Sliders, FileSpreadsheet, Activity } from 'lucide-react';
 import ManualPrediction from './ManualPrediction';
 import CsvPrediction from './CsvPrediction';
 import { ScrollReveal } from '../animations';
+import { getHealth } from '../services/api';
 
 export default function ConsoleSection({ featuresMetadata }) {
   const [activeTab, setActiveTab] = useState('manual');
+  const [health, setHealth] = useState(null);
+
+  useEffect(() => {
+    getHealth()
+      .then(setHealth)
+      .catch(() => setHealth({ model_loaded: false, status: 'degraded' }));
+  }, []);
+
+  const isModelReady = health?.model_loaded === true;
 
   return (
     <section id="console" className="py-24 sm:py-32 bg-black border-t border-[#1a1a1e] relative">
@@ -13,16 +23,26 @@ export default function ConsoleSection({ featuresMetadata }) {
         {/* En-tête centré épuré */}
         <ScrollReveal direction="up">
           <div className="text-center max-w-2xl mx-auto mb-12 space-y-3">
-            <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-medium bg-[#0c0c0e] text-blue-400 border border-[#222228]">
+            <div
+              className={`inline-flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-medium border ${
+                isModelReady
+                  ? 'bg-emerald-950/40 text-emerald-400 border-emerald-800/60'
+                  : 'bg-rose-950/40 text-rose-400 border-rose-800/60'
+              }`}
+            >
               <Activity className="w-3.5 h-3.5" />
-              <span>Moteur d'Inférence Actif</span>
+              <span>
+                {isModelReady
+                  ? "Moteur d'Inférence Actif"
+                  : 'Moteur d’Inférence Indisponible'}
+              </span>
             </div>
 
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white">
-              Live Detection Console
+              Console d'analyse
             </h2>
             <p className="text-neutral-400 text-sm sm:text-base font-normal">
-              Testez directement le modèle champion sur 9 métriques réseau (sans Destination Port) ou téléversez vos fichiers CSV.
+              Testez le modèle sur 9 features réseau (sans Destination Port) ou téléversez vos fichiers CSV.
             </p>
 
             {/* Commutateur en pilule moderne (Aura Style) */}

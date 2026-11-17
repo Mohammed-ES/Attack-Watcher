@@ -73,17 +73,16 @@ export default function Navbar({ onNavigateToConsole }) {
             Fonctionnement
           </button>
           <button
-            onClick={() => scrollTo('capabilities')}
+            onClick={() => scrollTo('model-info')}
             className="hover:text-white transition"
           >
             Pipeline & Modèles
           </button>
           <button
             onClick={() => scrollTo('console')}
-            className="text-white hover:text-blue-400 transition flex items-center space-x-1.5"
+            className="hover:text-white transition"
           >
-            <span>Console Live</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
+            Console
           </button>
           <button
             onClick={() => scrollTo('faq')}
@@ -136,16 +135,16 @@ export default function Navbar({ onNavigateToConsole }) {
             Fonctionnement
           </button>
           <button
-            onClick={() => scrollTo('capabilities')}
+            onClick={() => scrollTo('model-info')}
             className="text-left text-sm text-neutral-300 hover:text-white"
           >
             Pipeline & Modèles
           </button>
           <button
             onClick={() => scrollTo('console')}
-            className="text-left text-sm text-blue-400 font-semibold"
+            className="text-left text-sm text-neutral-300 hover:text-white"
           >
-            Console Live (Inférence Directe)
+            Console
           </button>
           <button
             onClick={() => scrollTo('faq')}

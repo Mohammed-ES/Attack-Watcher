@@ -4,9 +4,9 @@ import { ShieldCheck, Zap, Database, Cpu, ArrowUpRight } from 'lucide-react';
 export default function FeaturesSection() {
   const features = [
     {
-      tag: '01 // Temps Réel',
+      tag: '01 // Analyse de flux',
       title: 'Inférence Vectorisée',
-      desc: 'Classification instantanée du flux réseau à partir des 9 variables discriminantes du trafic IP/TCP (sans Destination Port) avec jauge de probabilité.',
+      desc: 'Classification du flux réseau à partir des 9 variables discriminantes du trafic IP/TCP (sans Destination Port) avec score du modèle.',
       icon: Zap,
       gradient: 'from-cyan-500/20 to-transparent',
       borderColor: 'hover:border-cyan-500/50',
@@ -23,17 +23,17 @@ export default function FeaturesSection() {
     },
     {
       tag: '03 // Rigueur Scientifique',
-      title: 'Zéro Fuite de Données',
-      desc: 'Le split stratifié ou LODO est appliqué en amont. L\'imputation médiane et le scaler sont encapsulés dans la Pipeline scikit-learn sans fuite.',
+      title: 'Séparation Stricte des Données',
+      desc: 'Entraînement et test séparés sur jeux réservés. L\'imputation médiane est encapsulée dans la Pipeline scikit-learn sans scaler ni fuite.',
       icon: ShieldCheck,
       gradient: 'from-emerald-500/20 to-transparent',
       borderColor: 'hover:border-emerald-500/50',
       iconColor: 'text-emerald-400',
     },
     {
-      tag: '04 // Moteur Champion',
-      title: 'Benchmark RF & XGBoost',
-      desc: 'Évaluation comparative réelle entre Random Forest et XGBoost sur le dataset de référence avec matrices de confusion réelles.',
+      tag: '04 // Moteur ML',
+      title: 'Random Forest Pipeline',
+      desc: 'Pipeline scikit-learn avec SimpleImputer et RandomForestClassifier évalué sur un jeu de test externe réservé.',
       icon: Cpu,
       gradient: 'from-amber-500/20 to-transparent',
       borderColor: 'hover:border-amber-500/50',

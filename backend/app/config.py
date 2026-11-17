@@ -9,10 +9,10 @@ from typing import ClassVar
 
 class Settings:
     PROJECT_NAME: str = "Attack Watcher API"
-    PROJECT_VERSION: str = "1.1.0"
+    PROJECT_VERSION: str = "1.3.0"
     API_PREFIX: str = "/api"
 
-    # Chemins absolus résolus dynamiquement
+    # Chemins absolus résolus dynamiquement à partir de Path(__file__)
     BACKEND_DIR: Path = Path(__file__).resolve().parent.parent
     ROOT_DIR: Path = BACKEND_DIR.parent
     ARTIFACTS_DIR: Path = (ROOT_DIR / "ml" / "artifacts").resolve()

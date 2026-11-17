@@ -25,7 +25,7 @@ export default function HeroSection({ onLaunchConsole }) {
           transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
           className="text-5xl sm:text-7xl md:text-8xl font-extrabold tracking-tight text-white leading-[1.04] drop-shadow-2xl"
         >
-          Detection That Scales.
+          Détection DDoS par Machine Learning.
         </motion.h1>
 
         {/* Sous-titre épuré, centré et net, complètement dégagé des lignes lumineuses */}
@@ -35,8 +35,7 @@ export default function HeroSection({ onLaunchConsole }) {
           transition={{ duration: 0.9, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
           className="text-base sm:text-lg md:text-xl text-neutral-300 max-w-2xl mx-auto font-normal leading-relaxed drop-shadow-md"
         >
-          Next-generation machine learning architecture for high-throughput network inspection,
-          automated traffic scoring, and real-time DDoS mitigation.
+          Prototype de détection DDoS par Random Forest (9 features réseau), évalué sur des fichiers CSV CIC-IDS2017 et CIC-DDoS2019.
         </motion.p>
 
         {/* Boutons d'action arrondis en pilule (Pill buttons) avec présence affirmée */}

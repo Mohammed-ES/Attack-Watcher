@@ -84,23 +84,23 @@ export const original21stItems: FeatureItem[] = [
 
 export const attackWatcherItems: FeatureItem[] = [
   {
-    title: "Inspection Vectorielle en Temps Réel",
-    alt: "Extraction instantanée des 10 variables fondamentales du trafic réseau IP/TCP à partir des paquets capturés.",
+    title: "Inspection Vectorielle de Flux",
+    alt: "Extraction des 9 variables discriminantes du trafic réseau IP/TCP sans dépendance au port de destination.",
     content: "https://cdn.21st.dev/assets/mirror/8c/8c4e18b6cde77ac53f3fa40ce7146594c03dd5fd0ebbd2adc9de141804a4d845.webm",
   },
   {
-    title: "Standardisation StandardScaler Robuste",
-    alt: "Standardisation StandardScaler fittée rigoureusement post-split stratifié, éliminant toute contamination statistique.",
+    title: "Pipeline Anti-Leakage Robuste",
+    alt: "Imputation médiane encapsulée dans le Pipeline scikit-learn fittée rigoureusement sur le jeu d'entraînement, sans scaler.",
     content: "https://cdn.21st.dev/assets/mirror/25/25228e9cefa50f9db3c28b77375e51fb15fc5975d98a6fbe23dbeeb9e068395d.webm",
   },
   {
-    title: "Moteur Champion Haute Précision",
-    alt: "Entraînement et benchmark continu avec sélection automatique du meilleur modèle basé sur le F1-Score et la latence.",
+    title: "Moteur Random Forest Optimisé",
+    alt: "Pipeline scikit-learn avec SimpleImputer et RandomForestClassifier validé sur jeux de test externes réservés.",
     content: "https://cdn.21st.dev/assets/localized/bd5e2be5d76b2e4f1612e70510357cf6865869dfed81859c4fd7b597ca38b9a6.png",
   },
   {
     title: "Analyse Vectorisée de Fichiers CSV",
-    alt: "Analyse vectorisée de fichiers CSV volumineux comprenant des centaines de milliers de flux sans saturation mémoire.",
+    alt: "Analyse vectorisée de fichiers CSV volumineux jusqu'à 50 Mo sans saturation mémoire.",
     content: "https://cdn.21st.dev/assets/mirror/16/167a5626e0c8f3aa59c25b5dc3324a2d0178bbec206084a4375f5363e29ade5f.webm",
   },
   {

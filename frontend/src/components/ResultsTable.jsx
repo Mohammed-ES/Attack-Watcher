@@ -116,7 +116,7 @@ export default function ResultsTable({ rows }) {
             <tr className="bg-black/60 border-b border-[#1a1a1e] text-neutral-400 font-semibold uppercase tracking-wider">
               <th className="py-3 px-4"># Ligne</th>
               <th className="py-3 px-4">Verdict</th>
-              <th className="py-3 px-4">Probabilité DDoS</th>
+              <th className="py-3 px-4">Score du modèle (non calibré)</th>
               <th className="py-3 px-4">Durée Flux (µs)</th>
               <th className="py-3 px-4">Total Fwd Pkts</th>
               <th className="py-3 px-4">Total Bwd Pkts</th>
@@ -154,7 +154,7 @@ export default function ResultsTable({ rows }) {
                       ) : (
                         <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
                           <ShieldCheck className="w-3 h-3 mr-1" />
-                          BENIGN
+                          Normal
                         </span>
                       )}
                     </td>

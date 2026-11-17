@@ -8,34 +8,29 @@ export default function FaqSection() {
 
   const faqs = [
     {
-      question: "Comment l'architecture élimine-t-elle tout risque de fuite de données (Data Leakage) ?",
+      question: "Comment la séparation entraînement / test est-elle assurée ?",
       answer:
-        "La partition des données (StratifiedShuffleSplit 80% entraînement / 20% test ou Leave-One-Dataset-Out) est appliquée strictement avant toute étape de mise à l'échelle. L'imputation médiane (SimpleImputer) et la normalisation (StandardScaler) sont encapsulées dans une Pipeline scikit-learn fittée exclusivement sur X_train, garantissant l'étanchéité totale du jeu de test.",
+        "Entraînement sur CIC-IDS2017 et une partie de CIC-DDoS2019, test sur des attaques réservées et du Normal réservé, imputation apprise sur l'entraînement uniquement.",
     },
     {
-      question: 'Pourquoi le modèle Random Forest a-t-il été retenu comme champion face à XGBoost ?',
+      question: 'Quel est le modèle déployé et comment a-t-il été évalué ?',
       answer:
-        "Lors de notre banc d'essai comparatif sur 41 931 flux réels held-out, RandomForest a atteint un score F1 optimal de 0.9996 (Précision 99.99%, Rappel 99.93%) avec une stabilité remarquable et une empreinte mémoire compacte.",
+        "Le système utilise un RandomForestClassifier scikit-learn 1.6.1 au sein d'une Pipeline avec SimpleImputer. Il a été entraîné sur des sous-ensembles de CIC-IDS2017 et CIC-DDoS2019, et évalué sur un jeu de test externe réservé comprenant des attaques réservées (TFTP, UDPLag, DrDoS_LDAP) et du trafic normal réservé.",
     },
     {
       question: "Quelles sont les 9 caractéristiques réseau extraites pour l'inférence ?",
       answer:
-        "Le vecteur d'entrée capture la signature dynamique des flux TCP/IP : Flow Duration, Total Fwd/Bwd Packets, Total Length of Fwd/Bwd Packets, Bwd Packet Length Std, Flow Packets/s, Flow IAT Mean et ACK Flag Count. La variable Destination Port a été volontairement retirée pour limiter la dépendance au contexte de capture.",
+        "Le vecteur d'entrée capture la signature dynamique des flux TCP/IP : Flow Duration, Total Fwd Packets, Total Backward Packets, Total Length of Fwd Packets, Total Length of Bwd Packets, Bwd Packet Length Std, Flow Packets/s, Flow IAT Mean et ACK Flag Count. La variable Destination Port a été retirée pour éviter tout biais lié au contexte de capture.",
     },
     {
-      question: "Comment le traitement vectorisé de fichiers CSV massifs s'effectue-t-il sans saturation mémoire ?",
+      question: "Quelles sont les limites de taille des fichiers ?",
       answer:
-        "Le point d'accès /predict-csv applique un streaming vectorisé avec Pandas et NumPy. Les 9 colonnes requises sont validées (rejet 400 clair si une colonne manque), les valeurs non numériques sont isolées, et la taille de fichier est bornée à 50 Mo (statut 413 si dépassée).",
-    },
-    {
-      question: "Quelle est la performance d'inférence en environnement de production ?",
-      answer:
-        "L'exposition via FastAPI et Pydantic v2 garantit une validation de schéma ultra-rapide. L'inférence vectorisée par lot traite des dizaines de milliers de lignes en quelques secondes, permettant une intégration fluide sur sondes réseau ou chaînes d'analyse SOC.",
+        "50 Mo maximum (erreur 413 au-delà), colonnes obligatoires contrôlées (erreur 422).",
     },
     {
       question: 'Comment exporter les résultats annotés vers les plateformes SIEM / SOC ?',
       answer:
-        "Après chaque analyse par lot, l'utilisateur dispose d'un bouton de téléchargement instantané renvoyant le fichier CSV enrichi de deux colonnes techniques : 'Prediction' (BENIGN ou DDoS) et 'DDoS_Probability' (confiance probabiliste entre 0 et 1), directement intégrable dans Splunk, Elastic ou Graylog.",
+        "Après chaque analyse par lot, l'utilisateur peut télécharger un fichier CSV annoté avec les colonnes Attack_Watcher_Prediction et DDoS_Probability (score du modèle), sans intégration directe avec Splunk, Elastic ou Graylog.",
     },
   ];
 
@@ -55,11 +50,11 @@ export default function FaqSection() {
             </div>
 
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white">
-              Questions, answered
+              Foire aux questions
             </h2>
 
             <p className="text-neutral-400 text-sm sm:text-base font-normal">
-              Technical insights into our machine learning pipeline, dataset certification, and real-time DDoS mitigation engine.
+              Éclairages techniques sur la pipeline de machine learning, les jeux de données d'évaluation et le prototype de détection.
             </p>
           </div>
         </ScrollReveal>

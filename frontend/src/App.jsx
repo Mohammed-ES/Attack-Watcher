@@ -4,23 +4,24 @@ import HelloSection from './components/HelloSection';
 import HeroSection from './components/HeroSection';
 import HowItWorksSection from './components/HowItWorksSection';
 import FeaturesGridSection from './components/FeaturesGridSection';
+import BenchmarkSection from './components/BenchmarkSection';
 import ConsoleSection from './components/ConsoleSection';
 import FaqSection from './components/FaqSection';
 import Footer from './components/Footer';
 import GlobalAsciiCanvas from './components/GlobalAsciiCanvas';
-import { getHealth, getFeaturesMetadata } from './services/api';
+import { getHealth, getModelInfo } from './services/api';
 
 export default function App() {
-  const [featuresMetadata, setFeaturesMetadata] = useState(null);
+  const [modelInfo, setModelInfo] = useState(null);
 
   useEffect(() => {
     async function init() {
       try {
-        const [_, featRes] = await Promise.all([
+        const [_, infoRes] = await Promise.all([
           getHealth().catch(() => null),
-          getFeaturesMetadata().catch(() => null),
+          getModelInfo().catch(() => null),
         ]);
-        setFeaturesMetadata(featRes);
+        setModelInfo(infoRes);
       } catch (e) {
         console.error('Erreur initialisation frontend:', e);
       }
@@ -44,33 +45,36 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-black text-neutral-100 selection:bg-blue-600 selection:text-white flex flex-col antialiased relative">
-      {/* Barre de navigation flottante façon pilule (apparaît lors de l'accès au Hero) */}
+      {/* Barre de navigation flottante façon pilule */}
       <Navbar onNavigateToConsole={scrollToConsole} />
 
-      {/* 1. HELLO SECTION : Présentation plein écran du logo .GIF sans header */}
+      {/* 1. HELLO SECTION : Présentation plein écran du logo */}
       <HelloSection onExplore={scrollToHero} />
 
-      {/* Flux Sombre Continu : Matrice ASCII interactive au curseur du Hero jusqu'au Footer */}
+      {/* Flux Sombre Continu : Matrice ASCII interactive */}
       <div className="relative bg-black isolate">
         {/* Fond ASCII interactif global */}
         <GlobalAsciiCanvas />
 
-        {/* 2. HERO SECTION : Style Aura.build "Detection That Scales." avec orgues lumineuses */}
+        {/* 2. HERO SECTION : Detection That Scales */}
         <HeroSection onLaunchConsole={scrollToConsole} />
 
-        {/* 3. Section "How it works" : Cartes interactives synchronisées avec scroll motion */}
+        {/* 3. Section "How it works" */}
         <HowItWorksSection />
 
-        {/* 4. Section "Intelligence at every layer" : Grille 6 cartes modernes avec background et animations */}
+        {/* 4. Section "Intelligence at every layer" */}
         <FeaturesGridSection />
 
-        {/* 5. Console Interactive en direct (Saisie Manuelle 10 features & Analyse CSV) */}
-        <ConsoleSection featuresMetadata={featuresMetadata} />
+        {/* 5. Section Métriques réelles et Évaluation Modèle */}
+        <BenchmarkSection />
 
-        {/* 6. Section "Questions, answered" : Foire aux questions technique interactive */}
+        {/* 6. Console Interactive en direct (Saisie Manuelle 9 features & Analyse CSV) */}
+        <ConsoleSection featuresMetadata={modelInfo} />
+
+        {/* 7. Section "Questions, answered" : Foire aux questions */}
         <FaqSection />
 
-        {/* 7. Pied de page épuré */}
+        {/* 8. Pied de page */}
         <Footer />
       </div>
     </div>

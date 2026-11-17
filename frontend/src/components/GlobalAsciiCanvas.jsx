@@ -96,7 +96,7 @@ export default function GlobalAsciiCanvas() {
       const radius = 200; // Rayon interactif de la souris
       const radiusSq = radius * radius;
 
-      // Détection de sélection de texte active pour atténuer le fond et garantir une lisibilité absolue
+      // Détection de sélection de texte active pour atténuer le fond et assurer une lisibilité absolue
       const hasTextSelection =
         typeof window !== 'undefined' &&
         window.getSelection &&
