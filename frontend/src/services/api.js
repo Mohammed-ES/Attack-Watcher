@@ -123,3 +123,18 @@ export async function downloadAnnotatedCsv(file) {
   link.remove();
   window.URL.revokeObjectURL(downloadUrl);
 }
+
+/**
+ * Vérifie un rendu de TP étudiant (resultats_TP_NOM.json + predictions_TP_NOM.csv).
+ */
+export async function verifyTp(jsonFile, csvFile) {
+  const formData = new FormData();
+  formData.append('json_file', jsonFile);
+  formData.append('csv_file', csvFile);
+
+  const res = await fetch(`${API_BASE}/tp/verify`, {
+    method: 'POST',
+    body: formData,
+  });
+  return parseResponse(res);
+}

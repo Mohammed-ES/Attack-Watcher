@@ -1,0 +1,9 @@
+frontend/
+loadtest/
+data/
+.venv/
+.venv313/
+**/__pycache__/
+**/*.db
+node_modules/
+.git/

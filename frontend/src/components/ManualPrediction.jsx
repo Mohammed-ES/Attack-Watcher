@@ -47,10 +47,17 @@ export default function ManualPrediction({ featuresMetadata }) {
   const featureKeys = Object.keys(DEFAULT_BENIGN);
 
   const handleChange = (key, val) => {
-    const num = parseFloat(val);
+    if (val === '') {
+      setFormData((prev) => ({
+        ...prev,
+        [key]: '',
+      }));
+      return;
+    }
+    const num = Number(val);
     setFormData((prev) => ({
       ...prev,
-      [key]: isNaN(num) ? val : num,
+      [key]: Number.isNaN(num) ? val : num,
     }));
   };
 
@@ -65,17 +72,29 @@ export default function ManualPrediction({ featuresMetadata }) {
     setError(null);
 
     // Validation des champs côté client
-    const ackVal = Number(formData['ACK Flag Count']);
-    if (isNaN(ackVal) || ackVal < 0 || !Number.isInteger(ackVal)) {
-      setError('Le champ "ACK Flag Count" doit être un nombre entier positif ou nul (0 ou 1).');
+    const rawAck = formData['ACK Flag Count'];
+    if (rawAck === '' || rawAck === null || rawAck === undefined) {
+      setError('Le champ "ACK Flag Count" ne peut pas être vide.');
+      setLoading(false);
+      return;
+    }
+    const ackVal = Number(rawAck);
+    if (Number.isNaN(ackVal) || ackVal < 0 || !Number.isInteger(ackVal)) {
+      setError('Le champ "ACK Flag Count" doit être un nombre entier positif ou nul (minimum 0).');
       setLoading(false);
       return;
     }
 
     for (const key of featureKeys) {
       if (key === 'ACK Flag Count') continue;
-      const val = Number(formData[key]);
-      if (isNaN(val) || val < 0) {
+      const rawVal = formData[key];
+      if (rawVal === '' || rawVal === null || rawVal === undefined) {
+        setError(`Le champ "${key}" ne peut pas être vide.`);
+        setLoading(false);
+        return;
+      }
+      const val = Number(rawVal);
+      if (Number.isNaN(val) || val < 0) {
         setError(`Le champ "${key}" doit être un nombre positif ou nul.`);
         setLoading(false);
         return;
@@ -136,7 +155,7 @@ export default function ManualPrediction({ featuresMetadata }) {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} noValidate className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {featureKeys.map((key) => {
               const isFlag = key === 'ACK Flag Count';

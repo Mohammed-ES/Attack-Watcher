@@ -17,7 +17,7 @@ export default function Footer() {
   };
 
   const isHealthy = health?.status === 'healthy';
-  const version = modelInfo?.version || '1.3.0';
+  const version = modelInfo?.version ?? '—';
 
   return (
     <footer className="bg-black border-t border-[#1a1a1e] py-16 text-neutral-400 text-xs">
@@ -65,6 +65,11 @@ export default function Footer() {
               <li>
                 <button onClick={() => scrollTo('console')} className="hover:text-white transition">
                   Console
+                </button>
+              </li>
+              <li>
+                <button onClick={() => scrollTo('verify-tp')} className="hover:text-white transition">
+                  Vérifier mon TP
                 </button>
               </li>
               <li>

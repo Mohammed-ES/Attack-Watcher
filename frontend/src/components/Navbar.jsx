@@ -85,6 +85,12 @@ export default function Navbar({ onNavigateToConsole }) {
             Console
           </button>
           <button
+            onClick={() => scrollTo('verify-tp')}
+            className="hover:text-white transition"
+          >
+            Vérifier mon TP
+          </button>
+          <button
             onClick={() => scrollTo('faq')}
             className="hover:text-white transition"
           >
@@ -145,6 +151,12 @@ export default function Navbar({ onNavigateToConsole }) {
             className="text-left text-sm text-neutral-300 hover:text-white"
           >
             Console
+          </button>
+          <button
+            onClick={() => scrollTo('verify-tp')}
+            className="text-left text-sm text-neutral-300 hover:text-white"
+          >
+            Vérifier mon TP
           </button>
           <button
             onClick={() => scrollTo('faq')}

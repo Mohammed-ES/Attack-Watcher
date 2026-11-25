@@ -66,12 +66,6 @@ class AttackPredictor:
             # 2. Chargement de la pipeline scikit-learn (SimpleImputer + RandomForestClassifier)
             self.pipeline = joblib.load(self.model_path)
 
-            # Compatibilité d'attribut interne SimpleImputer lors d'unpickle multi-versions
-            if hasattr(self.pipeline, "named_steps") and "imputer" in self.pipeline.named_steps:
-                imp = self.pipeline.named_steps["imputer"]
-                if not hasattr(imp, "_fill_dtype"):
-                    imp._fill_dtype = getattr(imp, "_fit_dtype", np.float64)
-
         except Exception as e:
             raise ModelLoadError(f"Erreur lors du chargement des artefacts ML : {e}") from e
 

@@ -72,7 +72,7 @@ export const original21stItems: FeatureItem[] = [
   },
   {
     title: "Dark mode out of the box.",
-    alt: "Theme switching with CSS variables. Light, dark, or fully custom — zero extra work.",
+    alt: "Theme switching with CSS variables. Light, dark, or fully custom — no extra work.",
     content: "https://cdn.21st.dev/assets/mirror/16/167a5626e0c8f3aa59c25b5dc3324a2d0178bbec206084a4375f5363e29ade5f.webm",
   },
   {

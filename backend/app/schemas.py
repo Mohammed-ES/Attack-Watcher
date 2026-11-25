@@ -122,3 +122,80 @@ class HealthResponse(BaseModel):
     version: str
     model_loaded: bool
     model_name: str | None = None
+
+
+class TpCheckItem(BaseModel):
+    """Résultat d'un contrôle individuel de vérification de TP."""
+    id: str
+    label: str
+    passed: bool
+    status: str
+    numeric: bool
+    detail: str
+
+
+class TpMetricPart(BaseModel):
+    """Métriques extraites pour une partie du TP."""
+    key: str
+    label: str
+    vp: int | None = None
+    fp: int | None = None
+    vn: int | None = None
+    fn: int | None = None
+    recall: float | None = None
+    taux_fp: float | None = None
+    accuracy: float | None = None
+    precision: float | None = None
+    f1: float | None = None
+
+
+class TpVerifyResponse(BaseModel):
+    """Rapport complet de vérification d'un rendu de TP étudiant."""
+    etudiant: str | None = None
+    sklearn_version: str | None = None
+    score: int
+    max_score: int
+    percentage: float
+    all_numeric_passed: bool
+    total_csv_rows: int
+    checks: list[TpCheckItem]
+    metrics_by_part: list[TpMetricPart] = []
+    recomputed_confusion_matrix: dict[str, int]
+    empty_partie7_fields: list[str]
+    limitations: list[str]
+
+
+class TpTestFeaturesResponse(BaseModel):
+    """Jeu de test étudiant sans étiquettes (id + 9 features uniquement)."""
+    count: int
+    features: list[str]
+    rows: list[dict[str, Any]]
+
+
+class TpPredictionItem(BaseModel):
+    """Prédiction soumise par un étudiant pour une ligne identifiée par id."""
+    id: int
+    pred: int = Field(..., ge=0, le=1)
+
+
+class TpSubmitRequest(BaseModel):
+    """Requête de soumission des prédictions étudiantes."""
+    predictions: list[TpPredictionItem] = Field(..., min_length=1)
+
+
+class TpSubmitResponse(BaseModel):
+    """Métriques renvoyées après soumission (sans matrice de confusion ni étiquettes)."""
+    recall: float
+    precision: float
+    f1: float
+    taux_fp: float
+    total_predictions: int
+
+
+class TpStatsResponse(BaseModel):
+    """Statistiques d'activité TP anonymisées pour l'administration."""
+    distinct_students: int
+    total_imports: int
+    total_errors: int
+    total_submits: int
+    last_24h: dict[str, int]

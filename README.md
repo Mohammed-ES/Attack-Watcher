@@ -155,12 +155,35 @@ Attack-Watcher/
 
 ### 1. Backend FastAPI
 ```bash
-# Installation des dépendances Python
+# Création de l'environnement Python 3.13 avec scikit-learn 1.6.1
+py -3.13 -m venv .venv313
+
+# Installation des dépendances Python (scikit-learn==1.6.1, sans adaptateur _fill_dtype)
 pip install -r backend/requirements.txt
 
 # Démarrage du serveur FastAPI
 uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
+
+Avec Python 3.13 et `scikit-learn==1.6.1`, `ml/artifacts/model.joblib` se charge directement sans adaptateur de compatibilité `_fill_dtype`.
+
+#### Variables d'environnement et persistance (Hugging Face Spaces / Docker)
+
+| Variable | Description | Défaut |
+| :--- | :--- | :--- |
+| `PORT` | Port d'écoute d'Uvicorn dans le conteneur Docker | `7860` |
+| `CORS_ORIGINS` | Origine(s) CORS autorisée(s), séparées par des virgules (ex: domaine Vercel). Aucune origine par défaut en production. | `""` |
+| `TP_LABELS_PATH` | Chemin absolu vers le fichier secret (CSV/JSON) contenant les étiquettes du jeu de test TP (hors dépôt) | `""` |
+| `TP_LABELS_JSON` | Contenu CSV ou JSON des étiquettes injecté directement via secret d'environnement (alternatif à `TP_LABELS_PATH`) | `""` |
+| `ADMIN_TOKEN` | Jeton secret requis pour accéder à `GET /api/admin/tp-stats` | `""` |
+| `STUDENT_TOKENS` | Liste des jetons étudiants actifs, séparés par des virgules (fournis via secrets) | `""` |
+| `TP_DB_PATH` | Chemin vers la base SQLite des jetons révocables et événements `tp_events` | `data/tp_tracking.db` |
+
+> **Persistance sur disque éphémère (Hugging Face Spaces)** :  
+> Les jetons étudiants (`STUDENT_TOKENS`) et les étiquettes (`TP_LABELS_PATH` / `TP_LABELS_JSON`) proviennent exclusivement des variables d'environnement (secrets).  
+> Les événements `tp_events` et les compteurs quotidiens sont stockés dans SQLite (`TP_DB_PATH`) sur disque éphémère et peuvent être perdus lors d'un redémarrage du Space. L'endpoint `GET /api/admin/tp-stats` (protégé par `ADMIN_TOKEN`) renvoie un instantané JSON que l'enseignant peut sauvegarder.  
+> `/api/health` reste accessible sans jeton pour la supervision du fournisseur d'hébergement.
+> La limite d'import pour `/api/tp/verify` est fixée à **5 Mo** (`TP_MAX_UPLOAD_SIZE = 5 * 1024 * 1024`), contre **50 Mo** (`MAX_UPLOAD_SIZE = 50 * 1024 * 1024`) pour l'analyse par lot `/api/predict-csv`.
 
 L'API est accessible sur `http://localhost:8000`. La documentation OpenAPI Swagger est disponible sur `http://localhost:8000/docs`.
 
@@ -178,17 +201,22 @@ L'interface web est accessible sur `http://localhost:5173`.
 ## Tests et Qualité de Code
 
 ```bash
-# Exécution des tests Pytest (9 tests : prédiction unitaire, CSV, rejets 422/413/503, /api/model-info)
-.\.venv\Scripts\pytest
+# Exécution des 23 tests Pytest (inférence unitaire/CSV, rejets 422/413/503, TP verify/submit/stats)
+.\.venv313\Scripts\pytest backend/tests -v
 
 # Vérification du code Python avec Ruff
-.\.venv\Scripts\ruff check backend
+.\.venv313\Scripts\ruff check backend
 
 # Vérification ESLint Frontend
 npm --prefix frontend run lint
 
 # Build de production Frontend
-npm run build
+npm --prefix frontend run build
+
+# Test de charge k6 (staging uniquement, jamais contre la production)
+$env:STAGING_URL = "https://staging-api.example.com"
+$env:STUDENT_TOKEN = "votre_jeton_staging"
+k6 run loadtest/tp_load.js --summary-export loadtest/resume_space.json
 ```
 
 ---

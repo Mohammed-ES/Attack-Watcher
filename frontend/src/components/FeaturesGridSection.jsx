@@ -58,7 +58,7 @@ export default function FeaturesGridSection() {
       num: '06',
       title: 'Export CSV annoté',
       subtitle: 'Rapports Enrichis',
-      desc: 'Génération et téléchargement direct de rapports enrichis avec labels de prédiction et score du modèle.',
+      desc: 'Génération et téléchargement direct de fichiers CSV enrichis des colonnes Attack_Watcher_Prediction et DDoS_Probability.',
       icon: Download,
       tag: 'Export CSV',
       metric: 'Export Direct',

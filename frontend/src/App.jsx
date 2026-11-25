@@ -6,6 +6,7 @@ import HowItWorksSection from './components/HowItWorksSection';
 import FeaturesGridSection from './components/FeaturesGridSection';
 import BenchmarkSection from './components/BenchmarkSection';
 import ConsoleSection from './components/ConsoleSection';
+import TpVerifySection from './components/TpVerifySection';
 import FaqSection from './components/FaqSection';
 import Footer from './components/Footer';
 import GlobalAsciiCanvas from './components/GlobalAsciiCanvas';
@@ -68,10 +69,13 @@ export default function App() {
         {/* 5. Section Métriques réelles et Évaluation Modèle */}
         <BenchmarkSection />
 
-        {/* 6. Console Interactive en direct (Saisie Manuelle 9 features & Analyse CSV) */}
+        {/* 6. Console d'analyse (Saisie Manuelle 9 features & Analyse CSV) */}
         <ConsoleSection featuresMetadata={modelInfo} />
 
-        {/* 7. Section "Questions, answered" : Foire aux questions */}
+        {/* 7. Vérification des TP étudiants */}
+        <TpVerifySection />
+
+        {/* 8. Section "Questions, answered" : Foire aux questions */}
         <FaqSection />
 
         {/* 8. Pied de page */}

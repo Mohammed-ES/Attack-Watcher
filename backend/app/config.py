@@ -1,10 +1,18 @@
 """
 Configuration centralisée du backend Attack Watcher.
-Définit les chemins absolus et les contraintes opérationnelles (taille d'upload, origines CORS).
+Définit les chemins absolus, les contraintes opérationnelles et les variables d'environnement.
 """
 
+import os
 from pathlib import Path
 from typing import ClassVar
+
+
+def _parse_cors_origins() -> list[str]:
+    raw = os.getenv("CORS_ORIGINS", "").strip()
+    if not raw:
+        return []
+    return [origin.strip() for origin in raw.split(",") if origin.strip()]
 
 
 class Settings:
@@ -20,17 +28,24 @@ class Settings:
     MODEL_PATH: Path = (ARTIFACTS_DIR / "model.joblib").resolve()
     FEATURES_PATH: Path = (ARTIFACTS_DIR / "features.json").resolve()
 
-    # Limite de taille de fichier pour les téléversements CSV (50 Mo max)
-    MAX_UPLOAD_SIZE: int = 50 * 1024 * 1024  # 50 Mo
+    # Limite de taille de fichier pour les téléversements CSV/JSON (50 Mo max, 5 Mo max pour le TP)
+    MAX_UPLOAD_SIZE: int = 50 * 1024 * 1024  # 50 Mo (52 428 800 octets)
+    TP_MAX_UPLOAD_SIZE: int = 5 * 1024 * 1024  # 5 Mo (5 242 880 octets)
 
-    # Configuration CORS
-    CORS_ORIGINS: ClassVar[list[str]] = [
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "*",
-    ]
+    # Limite quotidienne de soumissions /api/tp/submit par jeton étudiant
+    TP_DAILY_SUBMIT_LIMIT: int = 5
+
+    # Variables d'environnement pour les TP et l'administration (secrets uniquement)
+    ADMIN_TOKEN: str = os.getenv("ADMIN_TOKEN", "")
+    TP_LABELS_PATH: str = os.getenv("TP_LABELS_PATH", "")
+    TP_LABELS_JSON: str = os.getenv("TP_LABELS_JSON", "")
+    TP_DB_PATH: Path = Path(
+        os.getenv("TP_DB_PATH", str((ROOT_DIR / "data" / "tp_tracking.db").resolve()))
+    )
+    STUDENT_TOKENS: str = os.getenv("STUDENT_TOKENS", "")
+
+    # Configuration CORS (lue depuis CORS_ORIGINS, aucune origine par défaut en production)
+    CORS_ORIGINS: ClassVar[list[str]] = _parse_cors_origins()
 
 
 settings = Settings()

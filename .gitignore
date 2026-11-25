@@ -2,6 +2,7 @@
 /data/*.csv
 /data/*.pcap
 /data/*.zip
+/data/*.db
 !/data/.gitkeep
 dataset/
 /dataset/*.csv
@@ -15,6 +16,7 @@ __pycache__/
 env/
 venv/
 .venv/
+.venv313/
 ENV/
 build/
 dist/
